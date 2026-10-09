@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Play, RotateCcw, GitPullRequest, Bot, ArrowRight } from 'lucide-react';
+import { Play, RotateCcw, GitPullRequest, Bot, ArrowRight, Activity, Cpu, Zap, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
+import { audioFx } from '../lib/audioFx';
 import { Navbar, NavTabType } from '../components/Navbar';
 import { CinematicLanding } from '../components/CinematicLanding';
 import { CreativeStudio } from '../components/CreativeStudio';
@@ -345,8 +346,74 @@ export default function Home() {
             </div>
           </div>
 
-            {/* ── Agent greeting / mission command bar ── */}
-            <Panel>
+          {/* ── Autonomous Multi-Agent Swarm Topology HUD ── */}
+          <div
+            className="relative overflow-hidden rounded-3xl p-5 border transition-all"
+            style={{
+              background: 'rgba(6, 8, 18, 0.78)',
+              backdropFilter: 'blur(20px)',
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 10px 30px -10px rgba(0, 243, 255, 0.1)',
+            }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
+              <div className="flex items-center gap-2 font-mono text-xs">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f3ff]" />
+                <span className="font-bold text-slate-200 uppercase tracking-wider" style={{ fontFamily: "'Orbitron', monospace" }}>
+                  AUTONOMOUS AGENT SWARM TOPOLOGY & EVENT BUS
+                </span>
+                <span className="text-[10px] text-slate-500 hidden sm:inline">
+                  (4 SPECIALIZED AGENTS • OPENROUTER QWEN3-CODER INFERENCE)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 font-mono text-[10px]">
+                <span className="text-slate-400">THROUGHPUT:</span>
+                <span className="text-cyan-300 font-bold">84 TOKENS/SEC</span>
+                <span className="text-slate-600">|</span>
+                <span className="text-slate-400">BUS LATENCY:</span>
+                <span className="text-emerald-300 font-bold">0.8ms</span>
+              </div>
+            </div>
+
+            {/* Swarm Nodes Connection Graph */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 font-mono text-xs">
+              {[
+                { id: '01', role: 'REPO INTELLIGENCE', desc: 'AST Syntax Tree & Blast Radius', color: '#00f3ff', stat: '14,200 LOC Scanned' },
+                { id: '02', role: 'SOLUTION ARCHITECT', desc: 'Dual A/B Plan Synthesis', color: '#cf3fff', stat: '2 Plans Generated' },
+                { id: '03', role: 'CODING AGENT', desc: 'OpenRouter Qwen3-Coder AST Diffs', color: '#00ff99', stat: '14 Lines Synthesized' },
+                { id: '04', role: 'CGROUPS VERIFIER', desc: 'Quarantined Container Assertions', color: '#ffaa00', stat: '18/18 Tests Passing' },
+              ].map((agent) => (
+                <div
+                  key={agent.id}
+                  className="p-3.5 rounded-2xl border transition-all hover:scale-[1.01]"
+                  style={{
+                    background: 'rgba(3, 4, 8, 0.65)',
+                    borderColor: `${agent.color}35`,
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-bold" style={{ color: agent.color }}>
+                      NODE {agent.id}
+                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: agent.color, boxShadow: `0 0 6px ${agent.color}` }} />
+                  </div>
+                  <div className="font-bold text-slate-200 text-[11px]" style={{ fontFamily: "'Orbitron', monospace" }}>
+                    {agent.role}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-sans mt-0.5 line-clamp-1">
+                    {agent.desc}
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-white/[0.05] text-[9px] font-bold" style={{ color: agent.color }}>
+                    {agent.stat}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Agent greeting / mission command bar ── */}
+          <Panel>
               {/* Top gradient line */}
               <div style={{
                 position: 'absolute', top: 0, left: 0, right: 0, height: '1px',

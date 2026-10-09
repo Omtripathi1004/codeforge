@@ -18,8 +18,13 @@ import {
   Bot,
   Zap,
   CheckCircle2,
-  Code2
+  Code2,
+  Play,
+  Activity,
+  Flame,
+  AlertTriangle,
 } from 'lucide-react';
+import { audioFx } from '../lib/audioFx';
 
 /* ════════════════════════════════════════════════════════════════════
    WEBGL SCENE — ACTIVE THEORY OBSIDIAN VOID + TWISTED SPINE + GLITTER
@@ -276,6 +281,126 @@ export const WORK_PROJECTS: WorkProject[] = [
   },
 ];
 
+export interface BugSimulatorCase {
+  id: string;
+  title: string;
+  tag: string;
+  accent: string;
+  buggyCode: string;
+  bugExplanation: string;
+  fixedCode: string;
+  fixExplanation: string;
+  terminalOutput: string;
+}
+
+export const BUG_SIMULATOR_CASES: BugSimulatorCase[] = [
+  {
+    id: 'jwt_race',
+    title: 'JWT Refresh Race Condition',
+    tag: 'CONCURRENCY MUTEX',
+    accent: '#00f3ff',
+    buggyCode: `@router.post("/auth/refresh")
+async def refresh_token(token: str):
+    # BUG: Concurrent mobile requests invalidate
+    # the token before the second request completes!
+    session = await db.get_session(token)
+    if not session or session.revoked:
+        raise HTTPException(401, "Token expired")
+    await db.revoke_token(token)
+    new_token = create_jwt(session.user_id)
+    return {"token": new_token}`,
+    bugExplanation: 'Under burst traffic (app startup), 2 HTTP calls with identical refresh tokens arrive within 1.2ms. Request 1 revokes the token; Request 2 is thrown a 401 Unauthorized logout.',
+    fixedCode: `@router.post("/auth/refresh")
+async def refresh_token(token: str):
+    # CODEFORGE FIX: Redis pipeline mutex + 15s grace window
+    async with redis_single_flight_mutex(f"lock:refresh:{token}"):
+        cached = await redis.get(f"grace:{token}")
+        if cached:
+            return {"token": cached, "cached_grace": True}
+        session = await db.get_session(token)
+        new_token = create_jwt(session.user_id)
+        await redis.setex(f"grace:{token}", 15, new_token)
+        return {"token": new_token}`,
+    fixExplanation: 'Synthesizes single-flight distributed lock with 15-second grace replay buffer per RFC 6749, ensuring concurrent requests receive identical valid tokens without invalidation.',
+    terminalOutput: `[cgroups-v2 sandbox] Concurrent burst: 100 parallel workers firing /auth/refresh
+[pytest-asyncio] test_concurrent_refresh_100_burst PASSED in 0.42s
+✓ 18/18 PASS | 0 401 exceptions | SHA-256 seal verified`
+  },
+  {
+    id: 'distributed_deadlock',
+    title: 'Distributed HNSW Lock Inversion Deadlock',
+    tag: 'TWO-PHASE COMMIT',
+    accent: '#cf3fff',
+    buggyCode: `async def sync_partitions(shard_a, shard_b):
+    # BUG: Shard locks acquired in arbitrary order
+    # Worker 1 locks A then B; Worker 2 locks B then A!
+    async with shard_a.mutex:
+        await asyncio.sleep(0.01) # network delay
+        async with shard_b.mutex:
+            await transfer_embeddings(shard_a, shard_b)`,
+    bugExplanation: 'Classic lock ordering anomaly. When two nodes rebalance shards simultaneously, both worker coroutines hang indefinitely waiting for the partner mutex.',
+    fixedCode: `async def sync_partitions(shard_a, shard_b):
+    # CODEFORGE FIX: Deterministic lock hierarchy sorting
+    first, second = sorted([shard_a, shard_b], key=lambda s: s.id)
+    async with first.mutex:
+        async with second.mutex:
+            await transfer_embeddings(shard_a, shard_b)`,
+    fixExplanation: 'Enforces strict global topological sort on lock acquisition identifiers, eliminating circular wait condition mathematically.',
+    terminalOutput: `[cgroups-v2 sandbox] Spawning 200 rebalance tasks on 8 shard nodes
+[ThreadSanitizer] 0 deadlocks, 0 lock inversions detected across 5,000 iterations
+✓ 24/24 PASS | Mean latency: 1.1ms`
+  },
+  {
+    id: 'memory_leak',
+    title: 'Async Generator Coroutine Memory Leak',
+    tag: 'AST SELF-HEALING',
+    accent: '#00ff99',
+    buggyCode: `async def stream_agent_events():
+    sub = await event_bus.subscribe()
+    while True:
+        # BUG: Exception breaks generator loop without
+        # calling unsubscriber; listeners pile up in RAM!
+        event = await sub.get()
+        yield event`,
+    bugExplanation: 'If the client disconnects, Python terminates the generator via GeneratorExit, leaving the listener registered in global state and causing heap exhaustion.',
+    fixedCode: `async def stream_agent_events():
+    sub = await event_bus.subscribe()
+    try:
+        while True:
+            event = await sub.get()
+            yield event
+    finally:
+        # CODEFORGE FIX: Guaranteed asynchronous cleanup
+        await event_bus.unsubscribe(sub)`,
+    fixExplanation: 'Injects a robust AST try/finally scope that guarantees unsubscription on client disconnect, generator teardown, or unhandled exceptions.',
+    terminalOutput: `[cgroups-v2 sandbox] Simulating 10,000 rapid client connections/drops
+[tracemalloc] Peak memory: 34.2 MB (0.0 MB leaked)
+✓ 12/12 PASS | 0 dangling references`
+  },
+  {
+    id: 'cve_zero',
+    title: 'High-Entropy Secret & Unsanitized Injection',
+    tag: 'CRYPTOGRAPHIC SHIELD',
+    accent: '#ffaa00',
+    buggyCode: `def execute_diagnostic(repo_path, branch):
+    # BUG: Shell interpolation allows arbitrary code exec
+    cmd = f"git status --branch {branch}"
+    return subprocess.check_output(cmd, shell=True, cwd=repo_path)`,
+    bugExplanation: 'Passing shell=True with user-controlled branch strings allows command injection (e.g. branch="main; cat /etc/passwd").',
+    fixedCode: `def execute_diagnostic(repo_path, branch):
+    # CODEFORGE FIX: Array execution & input sanitizer
+    clean_branch = re.sub(r"[^a-zA-Z0-9_/-]", "", branch)
+    return subprocess.check_output(
+        ["git", "status", "--branch", clean_branch],
+        shell=False, cwd=repo_path
+    )`,
+    fixExplanation: 'Removes shell=True, mandates explicit parameter array passing, and sanitizes input characters with zero performance penalty.',
+    terminalOutput: `[Bandit Security Scan] 0 high, 0 medium vulnerabilities detected
+[SHA-256 Verifier] Patch signed with cryptographically sealed digest
+✓ CVE-ZERO POLICY SATISFIED`
+  }
+];
+
 /* ════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ════════════════════════════════════════════════════════════════════ */
@@ -301,6 +426,11 @@ export const CinematicLanding: React.FC<CinematicLandingProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartX, setDragStartX] = useState(0);
   const [dragStartAngle, setDragStartAngle] = useState(0);
+
+  // Bug simulator states
+  const [activeBugId, setActiveBugId] = useState<string>('jwt_race');
+  const [isSimulatingTest, setIsSimulatingTest] = useState<boolean>(false);
+  const [testSimulatedPassed, setTestSimulatedPassed] = useState<boolean>(false);
 
   const numProjects = WORK_PROJECTS.length;
   const anglePerItem = 360 / numProjects;
@@ -764,6 +894,187 @@ export const CinematicLanding: React.FC<CinematicLandingProps> = ({
             </div>
           ))}
         </div>
+
+        {/* ── Global Real-Time Autonomous Swarm Activity Ticker ── */}
+        <div
+          className="mb-16 p-4 rounded-2xl border overflow-hidden relative"
+          style={{
+            background: 'rgba(3, 4, 8, 0.75)',
+            borderColor: 'rgba(0, 243, 255, 0.2)',
+          }}
+        >
+          <div className="flex items-center gap-3 font-mono text-xs overflow-x-auto whitespace-nowrap py-1">
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              GLOBAL SWARM LIVE:
+            </span>
+            {[
+              { repo: 'acme/nexus-api', fix: 'Resolved JWT mutex contention under 2,000 req/s', status: '✓ 18/18 PASS', time: '12s ago' },
+              { repo: 'nebius/vector-core', fix: 'Distributed two-phase commit lock reordered', status: '✓ 24/24 PASS', time: '48s ago' },
+              { repo: 'meta/react-tree', fix: 'AST node desynchronization self-healed', status: '✓ ZERO AST LOSS', time: '1m ago' },
+              { repo: 'tokio-rs/mpsc', fix: 'Waker registry mutex deadlock eliminated', status: '✓ THREADSAFE', time: '2m ago' },
+            ].map((feed, idx) => (
+              <div key={idx} className="flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-900/60 border border-white/[0.05] text-[11px] text-slate-300">
+                <span className="text-cyan-400 font-bold">{feed.repo}</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-slate-400">{feed.fix}</span>
+                <span className="text-emerald-400 font-bold text-[10px]">{feed.status}</span>
+                <span className="text-slate-600 text-[10px]">{feed.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Interactive Before & After Concurrency Bug Duel Simulator ── */}
+        {(() => {
+          const currentBug = BUG_SIMULATOR_CASES.find(c => c.id === activeBugId) || BUG_SIMULATOR_CASES[0];
+          return (
+            <div
+              className="mb-16 rounded-3xl p-6 sm:p-8 border space-y-6"
+              style={{
+                background: 'rgba(6, 8, 18, 0.85)',
+                backdropFilter: 'blur(24px)',
+                borderColor: 'rgba(0, 243, 255, 0.25)',
+                boxShadow: '0 20px 60px -15px rgba(0, 243, 255, 0.15)',
+              }}
+            >
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                      INTERACTIVE CODE DUEL SIMULATOR
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-500/10 text-purple-300 border border-purple-500/30">
+                      BEFORE VS AUTONOMOUS FIX
+                    </span>
+                  </div>
+                  <h3
+                    style={{
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: 'clamp(18px, 2.2vw, 24px)',
+                      fontWeight: 800,
+                      color: '#f8fafc',
+                    }}
+                  >
+                    CONCURRENCY & SECURITY ANOMALY SYNTHESIZER
+                  </h3>
+                  <p className="text-xs text-slate-400 font-sans mt-0.5">
+                    Select a real production bug scenario to see the failing source code vs CodeForge's autonomous self-repaired patch.
+                  </p>
+                </div>
+
+                {/* Bug Selector Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {BUG_SIMULATOR_CASES.map((b) => (
+                    <button
+                      key={b.id}
+                      onClick={() => {
+                        audioFx.playClick();
+                        setActiveBugId(b.id);
+                        setIsSimulatingTest(false);
+                        setTestSimulatedPassed(false);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all ${
+                        activeBugId === b.id
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-[0_0_12px_rgba(0,243,255,0.25)]'
+                          : 'bg-slate-900/60 text-slate-400 border border-white/[0.06] hover:text-white'
+                      }`}
+                    >
+                      {b.title.split(' ')[0]} {b.title.split(' ')[1]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Code comparison grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 font-mono text-xs">
+                {/* Left: Buggy Source Code */}
+                <div className="p-5 rounded-2xl bg-rose-950/20 border border-rose-500/30 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-rose-500/20">
+                    <span className="text-rose-400 font-bold flex items-center gap-1.5 text-[11px]">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      BEFORE: PRODUCTION RACE / VULNERABILITY
+                    </span>
+                    <span className="text-[10px] text-rose-400/70">FAILS UNDER LOAD</span>
+                  </div>
+                  <pre className="text-[11px] text-rose-200/90 leading-relaxed overflow-x-auto bg-black/60 p-4 rounded-xl border border-rose-500/10">
+                    {currentBug.buggyCode}
+                  </pre>
+                  <p className="text-[11px] text-rose-300/80 font-sans leading-relaxed">
+                    {currentBug.bugExplanation}
+                  </p>
+                </div>
+
+                {/* Right: CodeForge Autonomous Solution */}
+                <div className="p-5 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-emerald-500/20">
+                    <span className="text-emerald-400 font-bold flex items-center gap-1.5 text-[11px]">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      AFTER: CODEFORGE AUTONOMOUS RESOLUTION
+                    </span>
+                    <span className="text-[10px] text-emerald-400/70">RFC 6749 SEALED</span>
+                  </div>
+                  <pre className="text-[11px] text-emerald-300 leading-relaxed overflow-x-auto bg-black/60 p-4 rounded-xl border border-emerald-500/10">
+                    {currentBug.fixedCode}
+                  </pre>
+                  <p className="text-[11px] text-emerald-300/80 font-sans leading-relaxed">
+                    {currentBug.fixExplanation}
+                  </p>
+                </div>
+              </div>
+
+              {/* Simulation Action Bar */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs">
+                <div className="text-slate-400 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-cyan-400" />
+                  <span>Sandbox Kernel Assertions:</span>
+                  <span className="text-slate-200 font-bold">100 concurrent workers</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    disabled={isSimulatingTest}
+                    onClick={() => {
+                      audioFx.playClick();
+                      setIsSimulatingTest(true);
+                      setTimeout(() => {
+                        setIsSimulatingTest(false);
+                        setTestSimulatedPassed(true);
+                        audioFx.playSuccess();
+                      }, 1200);
+                    }}
+                    className="py-2 px-5 rounded-xl text-[#030408] bg-cyan-400 hover:bg-cyan-300 font-bold transition-all shadow-[0_0_15px_rgba(0,243,255,0.3)] flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isSimulatingTest ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>RUNNING IN CGROUPS...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5" />
+                        <span>SIMULATE AUTONOMOUS TEST</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Animated Terminal Output if simulated */}
+              {(isSimulatingTest || testSimulatedPassed) && (
+                <div className="rounded-2xl border border-cyan-500/30 overflow-hidden bg-black font-mono text-xs animate-in fade-in duration-300">
+                  <div className="px-4 py-2 bg-slate-900 border-b border-white/[0.08] text-cyan-400 font-bold flex items-center justify-between text-[11px]">
+                    <span>cgroups-v2 Isolated Container Execution Trace</span>
+                    <span className="text-emerald-400">STATUS: 100% PASS</span>
+                  </div>
+                  <pre className="p-4 text-emerald-400 whitespace-pre-wrap leading-relaxed text-[11px]">
+                    {currentBug.terminalOutput}
+                  </pre>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Global Hackathon & Mission Banner */}
         <div

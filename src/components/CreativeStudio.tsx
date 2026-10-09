@@ -16,9 +16,15 @@ import {
   Check,
   Plus,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Copy,
+  Grid
 } from 'lucide-react';
 import { DbStudioArtifact } from '../lib/server/db';
+import { audioFx } from '../lib/audioFx';
 
 interface CreativeStudioProps {
   onBackToWorkspace: () => void;
@@ -248,6 +254,19 @@ export const CreativeStudio: React.FC<CreativeStudioProps> = ({ onBackToWorkspac
   const [selectedArtifact, setSelectedArtifact] = useState<DbStudioArtifact | null>(DEFAULT_SEED_ARTIFACTS[0]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Interactive canvas toolbar states
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [showGrid, setShowGrid] = useState<boolean>(true);
+  const [copiedSvg, setCopiedSvg] = useState<boolean>(false);
+
+  const handleCopySvg = () => {
+    if (!selectedArtifact) return;
+    audioFx.playClick();
+    navigator.clipboard.writeText(selectedArtifact.content);
+    setCopiedSvg(true);
+    setTimeout(() => setCopiedSvg(false), 2000);
+  };
 
   useEffect(() => {
     fetchArtifacts();
@@ -566,7 +585,33 @@ export const CreativeStudio: React.FC<CreativeStudioProps> = ({ onBackToWorkspac
 
             <form onSubmit={handleGenerate} className="space-y-3">
               <div>
-                <label className="text-[11px] font-mono text-slate-400 block mb-1">Concept Objective / Prompt:</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-mono text-slate-400">Concept Objective / Prompt:</label>
+                </div>
+
+                {/* Instant blueprint prompt pills */}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {[
+                    { label: 'Redis Grace Mutex', text: 'Nexus API Concurrency Architecture & Redis Grace Window', cat: 'architecture' },
+                    { label: 'Two-Phase Commit', text: 'Distributed HNSW Lock Inversion & Shard Partition Two-Phase Commit', cat: 'architecture' },
+                    { label: 'CRDT AST Repair', text: 'CodeForge CRDT Collaborative AST State Desynchronization Resolver', cat: 'architecture' },
+                    { label: 'Monaco Dual HUD', text: 'CodeForge Dual-Pane Monaco IDE & Verification HUD', cat: 'ui_concept' },
+                  ].map((p, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        audioFx.playClick();
+                        setPromptInput(p.text);
+                        setActiveCategory(p.cat as any);
+                      }}
+                      className="px-2 py-0.5 rounded-lg text-[9px] font-mono bg-slate-900/80 hover:bg-slate-800 border border-white/[0.08] text-slate-400 hover:text-cyan-300 transition-all"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
                 <textarea
                   rows={3}
                   value={promptInput}
@@ -661,6 +706,60 @@ export const CreativeStudio: React.FC<CreativeStudioProps> = ({ onBackToWorkspac
 
             {selectedArtifact && (
               <div className="flex items-center gap-2">
+                {/* Zoom Controls */}
+                <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-white/[0.08] text-xs font-mono">
+                  <button
+                    onClick={() => {
+                      audioFx.playClick();
+                      setZoomLevel((z) => Math.max(0.6, z - 0.15));
+                    }}
+                    className="p-1 hover:text-white text-slate-400 transition-all"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="px-1.5 text-[10px] text-cyan-300 font-bold min-w-[36px] text-center">
+                    {Math.round(zoomLevel * 100)}%
+                  </span>
+                  <button
+                    onClick={() => {
+                      audioFx.playClick();
+                      setZoomLevel((z) => Math.min(2.0, z + 0.15));
+                    }}
+                    className="p-1 hover:text-white text-slate-400 transition-all"
+                    title="Zoom In"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Grid Toggle */}
+                <button
+                  onClick={() => {
+                    audioFx.playClick();
+                    setShowGrid(!showGrid);
+                  }}
+                  className={`p-2 rounded-xl border font-mono text-xs transition-all ${
+                    showGrid ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40' : 'bg-slate-900 text-slate-400 border-white/[0.08]'
+                  }`}
+                  title="Toggle Background Grid"
+                >
+                  <Grid className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Copy Raw SVG */}
+                {selectedArtifact.category !== 'storyboard' && (
+                  <button
+                    onClick={handleCopySvg}
+                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/[0.08] text-slate-300 font-mono text-xs flex items-center gap-1.5 transition-all shadow-md"
+                    title="Copy Raw SVG XML"
+                  >
+                    {copiedSvg ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-cyan-400" />}
+                    <span>{copiedSvg ? 'Copied' : 'SVG'}</span>
+                  </button>
+                )}
+
+                {/* Export Button */}
                 <button
                   onClick={handleDownload}
                   className="px-3.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/[0.08] text-slate-300 font-mono text-xs flex items-center gap-1.5 transition-all shadow-md"
@@ -674,9 +773,13 @@ export const CreativeStudio: React.FC<CreativeStudioProps> = ({ onBackToWorkspac
 
           {/* Canvas Render Frame */}
           <div
-            className="w-full min-h-[480px] rounded-xl border p-4 flex items-center justify-center overflow-auto shadow-inner"
+            className="w-full min-h-[480px] rounded-xl border p-4 flex items-center justify-center overflow-auto shadow-inner relative"
             style={{
               background: '#030408',
+              backgroundImage: showGrid
+                ? 'radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px)'
+                : 'none',
+              backgroundSize: '24px 24px',
               borderColor: 'rgba(255, 255, 255, 0.06)',
             }}
           >
@@ -693,7 +796,8 @@ export const CreativeStudio: React.FC<CreativeStudioProps> = ({ onBackToWorkspac
                 </div>
               ) : (
                 <div
-                  className="w-full flex items-center justify-center"
+                  className="w-full flex items-center justify-center transition-transform duration-200"
+                  style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
                   dangerouslySetInnerHTML={{ __html: selectedArtifact.content }}
                 />
               )

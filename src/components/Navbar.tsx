@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Bot } from 'lucide-react';
+import { Settings, Bot, Volume2, VolumeX } from 'lucide-react';
 import { UserProfile, RepositoryContext, MissionStatus } from '../types/codeforge';
 import { SAMPLE_REPOSITORIES } from '../services/mockRepositoryData';
+import { audioFx } from '../lib/audioFx';
 
 export type NavTabType = 'landing' | 'mission' | 'studio' | 'library' | 'benchmarks' | 'replay';
 
@@ -35,7 +36,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [scrolled, setScrolled] = useState(false);
   const [repoOpen, setRepoOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
   const repoRef = useRef<HTMLDivElement>(null);
+
+  const toggleSound = () => {
+    const next = audioFx.toggle();
+    setSoundOn(next);
+    if (next) audioFx.playSuccess();
+  };
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 30);
@@ -148,7 +156,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => {
+                  audioFx.playTabSwitch();
+                  setActiveTab(item.id);
+                }}
                 style={{
                   padding: '7px 14px', borderRadius: '999px',
                   fontFamily: "'Space Mono', monospace",
@@ -362,6 +373,26 @@ export const Navbar: React.FC<NavbarProps> = ({
             onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}
           >
             <Settings size={13} style={{ color: 'rgba(122,130,168,0.7)' }} />
+          </button>
+
+          {/* Audio FX Toggle */}
+          <button
+            onClick={toggleSound}
+            title={soundOn ? 'Mute Audio FX' : 'Enable Cyber Audio FX'}
+            style={{
+              padding: '7px', borderRadius: '999px',
+              background: soundOn ? 'rgba(0,243,255,0.12)' : 'rgba(6,8,18,0.88)',
+              backdropFilter: 'blur(20px)',
+              border: `1px solid ${soundOn ? 'rgba(0,243,255,0.3)' : 'rgba(255,255,255,0.06)'}`,
+              cursor: 'pointer', display: 'flex', alignItems: 'center',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {soundOn ? (
+              <Volume2 size={13} style={{ color: '#00f3ff' }} />
+            ) : (
+              <VolumeX size={13} style={{ color: 'rgba(122,130,168,0.5)' }} />
+            )}
           </button>
 
           {/* User avatar */}
