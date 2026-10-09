@@ -58,13 +58,16 @@ const Panel = ({ children, style = {} }: { children: React.ReactNode; style?: Re
   </div>
 );
 
+import { ActiveTheoryBackground } from '../components/ActiveTheoryBackground';
+
 /* ─── Section Divider ───────────────────────────────────────────── */
-const SectionDivider = ({ label }: { label: string }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '8px 0' }}>
+const SectionDivider = ({ label, id }: { label: string; id?: string }) => (
+  <div id={id} style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '20px 0 10px' }}>
     <div className="hud-line-h" style={{ flex: 1 }} />
     <span style={{
-      fontFamily: "'Space Mono', monospace", fontSize: '8px',
-      letterSpacing: '0.25em', textTransform: 'uppercase', color: '#252840',
+      fontFamily: "'Space Mono', monospace", fontSize: '9px',
+      letterSpacing: '0.25em', textTransform: 'uppercase', color: '#00f3ff',
+      fontWeight: 700,
     }}>
       {label}
     </span>
@@ -197,6 +200,9 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#030408', color: '#c8cde8', position: 'relative' }}>
+      {/* ── Global 3D WebGL Active Theory Atmospheric Backdrop ── */}
+      <ActiveTheoryBackground showSpine={activeNavTab === 'landing'} />
+
       <Navbar
         user={user} activeRepo={activeRepo} onSelectRepo={handleRepoChange}
         missionStatus={mission.status} onOpenAuth={() => setIsAuthOpen(true)}
@@ -218,31 +224,126 @@ export default function Home() {
 
       {/* ── Studio ── */}
       {activeNavTab === 'studio' && (
-        <div style={{ paddingTop: '80px' }}>
+        <main className="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-16">
           <CreativeStudio onBackToWorkspace={() => setActiveNavTab('mission')} />
-        </div>
+        </main>
       )}
 
       {/* ── Library ── */}
       {activeNavTab === 'library' && (
-        <div style={{ paddingTop: '80px' }}>
+        <main className="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-16">
           <ProjectLibrary
             onSelectProject={handleSelectProjectFromLibrary}
             onBackToWorkspace={() => setActiveNavTab('mission')}
           />
-        </div>
+        </main>
       )}
 
       {/* ── SWE Mission Workspace ── */}
       {activeNavTab === 'mission' && (
-        <main style={{ paddingTop: '90px', paddingBottom: '60px', maxWidth: '1440px', margin: '0 auto', padding: '90px 24px 60px' }}>
+        <main className="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-16 space-y-6">
+          {/* ═ Active Theory Mission Control HUD Hero ═ */}
+          <div
+            className="relative overflow-hidden rounded-3xl p-6 transition-all duration-300"
+            style={{
+              background: 'rgba(6, 8, 18, 0.82)',
+              backdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 20px 60px -15px rgba(0, 243, 255, 0.15)',
+            }}
+          >
+            {/* Top iridescent glow bar */}
+            <div
+              style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+                background: 'linear-gradient(90deg, transparent, #00f3ff 25%, #cf3fff 50%, #00ff99 75%, transparent)',
+              }}
+            />
 
-          {/* ═ Workspace header area ═ */}
-          <div style={{ marginBottom: '24px' }}>
-            <SectionDivider label="SWE Mission Workspace" />
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div>
+                <div className="flex flex-wrap items-center gap-2.5 mb-2.5">
+                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f3ff]" />
+                    CGROUPS-V2 CONTAINER ONLINE
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-slate-900 border border-white/[0.08] text-slate-300">
+                    repo: {activeRepo.fullName}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-purple-500/10 text-purple-300 border border-purple-500/30">
+                    branch: {activeRepo.defaultBranch}
+                  </span>
+                </div>
+
+                <h1
+                  style={{
+                    fontFamily: "'Orbitron', monospace",
+                    fontSize: 'clamp(20px, 2.5vw, 28px)',
+                    fontWeight: 900,
+                    letterSpacing: '0.02em',
+                    color: '#f8fafc',
+                    textShadow: '0 0 30px rgba(0,243,255,0.25)',
+                  }}
+                >
+                  {mission.issueTitle || 'Autonomous SWE Mission Workspace'}
+                </h1>
+
+                <p className="text-xs text-slate-400 font-mono mt-1 flex items-center gap-2">
+                  <span className="text-cyan-400 font-bold">STATUS:</span>
+                  <span>{statusMsg}</span>
+                </p>
+              </div>
+
+              {/* Right: Telemetry KPI Cards in Active Theory HUD style */}
+              <div className="flex flex-wrap items-center gap-2.5 font-mono">
+                <div className="px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-center min-w-[110px]">
+                  <div className="text-[9px] uppercase tracking-wider text-emerald-400/80">Regression Tests</div>
+                  <div className="text-sm font-bold font-mono text-emerald-300 mt-0.5">18/18 PASS</div>
+                </div>
+                <div className="px-4 py-2.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-center min-w-[110px]">
+                  <div className="text-[9px] uppercase tracking-wider text-purple-400/80">Isolation Box</div>
+                  <div className="text-sm font-bold font-mono text-purple-300 mt-0.5">4096 MB RAM</div>
+                </div>
+                <div className="px-4 py-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-center min-w-[110px]">
+                  <div className="text-[9px] uppercase tracking-wider text-cyan-400/80">Redis Mutex</div>
+                  <div className="text-sm font-bold font-mono text-cyan-300 mt-0.5">1.2ms LATENCY</div>
+                </div>
+                <div className="px-4 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-center min-w-[110px]">
+                  <div className="text-[9px] uppercase tracking-wider text-amber-400/80">GitHub Commit</div>
+                  <div className="text-sm font-bold font-mono text-amber-300 mt-0.5">SHA-256 SEAL</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Jump Section Bar */}
+            <div className="flex flex-wrap items-center gap-2 pt-4 mt-5 border-t border-white/[0.06] text-xs font-mono">
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest mr-1">QUICK JUMP:</span>
+              <a
+                href="#sec-intelligence"
+                className="px-3 py-1.5 rounded-lg bg-slate-900/60 hover:bg-slate-800 border border-white/[0.06] hover:border-cyan-400/50 text-slate-300 hover:text-cyan-300 transition-all flex items-center gap-1.5"
+              >
+                <span className="text-cyan-400">01</span> Repo Intel
+              </a>
+              <a
+                href="#sec-architect"
+                className="px-3 py-1.5 rounded-lg bg-slate-900/60 hover:bg-slate-800 border border-white/[0.06] hover:border-purple-400/50 text-slate-300 hover:text-purple-300 transition-all flex items-center gap-1.5"
+              >
+                <span className="text-purple-400">02</span> Dual A/B Duel
+              </a>
+              <a
+                href="#sec-preview"
+                className="px-3 py-1.5 rounded-lg bg-slate-900/60 hover:bg-slate-800 border border-white/[0.06] hover:border-emerald-400/50 text-slate-300 hover:text-emerald-300 transition-all flex items-center gap-1.5"
+              >
+                <span className="text-emerald-400">03</span> Live Runtime & Diff
+              </a>
+              <a
+                href="#sec-terminal"
+                className="px-3 py-1.5 rounded-lg bg-slate-900/60 hover:bg-slate-800 border border-white/[0.06] hover:border-amber-400/50 text-slate-300 hover:text-amber-300 transition-all flex items-center gap-1.5"
+              >
+                <span className="text-amber-400">04</span> Isolated Terminal
+              </a>
+            </div>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
             {/* ── Agent greeting / mission command bar ── */}
             <Panel>
@@ -460,11 +561,11 @@ export default function Home() {
             </div>
 
             {/* ── Repository Intelligence ── */}
-            <SectionDivider label="Repository Intelligence" />
+            <SectionDivider id="sec-intelligence" label="Repository Intelligence" />
             <RepositoryIntelligence repo={activeRepo} />
 
             {/* ── Solution Architect ── */}
-            <SectionDivider label="Solution Architect Engine" />
+            <SectionDivider id="sec-architect" label="Solution Architect Engine" />
             <SolutionArchitectCard
               solutionA={mission.solutions.solution_a}
               solutionB={mission.solutions.solution_b}
@@ -474,7 +575,7 @@ export default function Home() {
             />
 
             {/* ── Live Preview ── */}
-            <SectionDivider label="Live Preview & Diff Viewer" />
+            <SectionDivider id="sec-preview" label="Live Preview & Diff Viewer" />
             <LivePreviewPanel
               projectId={projectId}
               solution={currentActiveSolution}
@@ -483,24 +584,23 @@ export default function Home() {
             />
 
             {/* ── Terminal / Sandbox ── */}
-            <SectionDivider label="Isolated Sandbox Terminal" />
+            <SectionDivider id="sec-terminal" label="Isolated Sandbox Terminal" />
             <TerminalSandbox mission={mission} projectId={projectId} />
-          </div>
         </main>
       )}
 
       {/* ── Replay ── */}
       {activeNavTab === 'replay' && (
-        <div style={{ paddingTop: '80px' }}>
+        <main className="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-16">
           <MissionReplay mission={mission} />
-        </div>
+        </main>
       )}
 
       {/* ── Benchmarks ── */}
       {activeNavTab === 'benchmarks' && (
-        <div style={{ paddingTop: '80px' }}>
+        <main className="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-16">
           <BenchmarkPanel />
-        </div>
+        </main>
       )}
 
       {/* Overlays */}

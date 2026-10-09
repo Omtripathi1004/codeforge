@@ -130,54 +130,54 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </button>
 
-        {/* ── Center nav (hidden on landing, shown in workspace) ── */}
-        {activeTab !== 'landing' && (
-          <nav
-            style={{
-              display: 'flex', alignItems: 'center', gap: '2px',
-              background: 'rgba(6,8,18,0.88)',
-              backdropFilter: 'blur(24px)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: '999px',
-              padding: '4px',
-              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-            }}
-          >
-            {NAV_ITEMS.map(item => {
-              const active = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  style={{
-                    padding: '7px 14px', borderRadius: '999px',
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: '9px', letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    color: active ? '#00f3ff' : 'rgba(122,130,168,0.7)',
-                    background: active ? 'rgba(0,243,255,0.08)' : 'transparent',
-                    border: 'none', cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    position: 'relative',
-                  }}
-                >
-                  {active && (
-                    <span style={{
-                      position: 'absolute', bottom: '3px', left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: '16px', height: '1px',
-                      background: '#00f3ff',
-                      boxShadow: '0 0 8px #00f3ff',
-                      borderRadius: '1px',
-                      display: 'block',
-                    }} />
-                  )}
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
-        )}
+        {/* ── Center nav: Active Theory frosted capsule ── */}
+        <nav
+          style={{
+            display: 'flex', alignItems: 'center', gap: '2px',
+            background: 'rgba(6,8,18,0.88)',
+            backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            borderRadius: '999px',
+            padding: '4px',
+            position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+          }}
+        >
+          {NAV_ITEMS.map(item => {
+            const active = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                style={{
+                  padding: '7px 14px', borderRadius: '999px',
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: '9px', letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  color: active ? '#00f3ff' : 'rgba(122,130,168,0.7)',
+                  background: active ? 'rgba(0,243,255,0.12)' : 'transparent',
+                  border: active ? '1px solid rgba(0,243,255,0.25)' : '1px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  position: 'relative',
+                }}
+              >
+                {active && (
+                  <span style={{
+                    position: 'absolute', bottom: '3px', left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '16px', height: '1.5px',
+                    background: '#00f3ff',
+                    boxShadow: '0 0 8px #00f3ff',
+                    borderRadius: '1px',
+                    display: 'block',
+                  }} />
+                )}
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
 
         {/* ── Right: Active Theory style pill ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

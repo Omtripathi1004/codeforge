@@ -399,29 +399,7 @@ export const CinematicLanding: React.FC<CinematicLandingProps> = ({
       onWheel={handleWheel}
       style={{ perspective: '1400px' }}
     >
-      {/* ── 3D Three.js Background Canvas ── */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <Canvas
-          camera={{ position: [0, 0, 5], fov: 48 }}
-          gl={{ antialias: true, alpha: true }}
-          style={{ width: '100%', height: '100%' }}
-        >
-          <SceneLighting />
-          <StarField count={2400} />
-          <GlitterParticles />
-          <ActiveTheoryTotemSpine />
-        </Canvas>
-      </div>
-
-      {/* ── Subtle Active Theory Dark Vignette ── */}
-      <div
-        className="fixed inset-0 z-[1] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, transparent 35%, rgba(3,4,8,0.7) 75%, #030408 100%)',
-        }}
-      />
-
-      {/* ── Active Theory Top Left HUD Branding ── */}
+      {/* Active Theory Top Left HUD Branding */}
       <div className="fixed top-6 left-8 z-30 flex items-center gap-3 pointer-events-auto">
         <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_12px_#00f3ff]" />
         <div>
