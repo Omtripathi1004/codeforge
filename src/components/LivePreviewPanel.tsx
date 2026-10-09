@@ -11,6 +11,7 @@ interface LivePreviewPanelProps {
   missionStatus: string;
   browserVerification?: BrowserVerificationResult;
   initialMode?: 'minimum' | 'recommended' | 'custom';
+  task?: string;
 }
 
 interface WorkspaceFileItem {
@@ -27,6 +28,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   missionStatus,
   browserVerification,
   initialMode = 'recommended',
+  task = '',
 }) => {
   const [activeTab, setActiveTab] = useState<'preview' | 'browser_test' | 'diff' | 'files'>('preview');
   const [templateMode, setTemplateMode] = useState<'minimum' | 'recommended' | 'custom'>(initialMode);
@@ -98,7 +100,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
     setPreviewKey((prev) => prev + 1);
   };
 
-  const previewUrl = `/api/preview/${projectId}?mode=${templateMode}`;
+  const previewUrl = `/api/preview/${projectId}?mode=${templateMode}&task=${encodeURIComponent(task || '')}`;
 
   const viewportWidths = {
     desktop: '100%',

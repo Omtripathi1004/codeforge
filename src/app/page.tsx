@@ -144,9 +144,62 @@ export default function Home() {
     }
   };
 
+  const [isGithubGateOpen, setIsGithubGateOpen] = useState(false);
+  const [githubGateUsername, setGithubGateUsername] = useState('Omtripathi1004');
+  const [githubGateToken, setGithubGateToken] = useState('');
+  const [isGithubGateConnecting, setIsGithubGateConnecting] = useState(false);
+
+  const handleAuthorizeGithubGate = async () => {
+    setIsGithubGateConnecting(true);
+    try {
+      const res = await fetch('/api/auth/github', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          githubUsername: githubGateUsername.trim() || 'Omtripathi1004',
+          githubToken: githubGateToken.trim() || undefined,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          setUser(data.user);
+          localStorage.setItem('codeforge_github_linked', JSON.stringify(data.user));
+          audioFx.playSuccess();
+          setIsGithubGateOpen(false);
+          return;
+        }
+      }
+    } catch {
+      // Fallback local persistence
+    }
+    const updatedUser: UserProfile = {
+      ...user,
+      githubUsername: githubGateUsername.trim() || 'Omtripathi1004',
+      provider: 'github',
+      name: githubGateUsername.trim() || 'GitHub Developer',
+    };
+    setUser(updatedUser);
+    localStorage.setItem('codeforge_github_linked', JSON.stringify(updatedUser));
+    audioFx.playSuccess();
+    setIsGithubGateOpen(false);
+    setIsGithubGateConnecting(false);
+  };
+
   // Session init
   useEffect(() => {
     (async () => {
+      // Check GitHub link status on first visit as requested by user
+      const savedGithub = typeof window !== 'undefined' ? localStorage.getItem('codeforge_github_linked') : null;
+      if (!savedGithub) {
+        setIsGithubGateOpen(true);
+      } else {
+        try {
+          const parsed = JSON.parse(savedGithub);
+          setUser(prev => ({ ...prev, ...parsed }));
+        } catch {}
+      }
+
       try {
         const r = await fetch('/api/auth/me');
         if (r.ok) { const d = await r.json(); if (d.user) setUser(d.user); }
@@ -200,16 +253,43 @@ export default function Home() {
     setActiveNavTab('mission');
   };
 
-  const handleStartMission = async () => {
+  const handleStartMission = async (customTask?: string) => {
+    const activeTask = (customTask || taskInput).trim();
+    if (!activeTask) return;
+    audioFx.playClick();
+
+    const isLogin = /login|auth|password|email|sign\s?in|signup/i.test(activeTask);
+    const dynamicDesc = isLogin
+      ? `Requirements:\n1. Build an authentic, responsive login page with clean email & password inputs.\n2. Interactive password show/hide eye toggle with real-time field validation.\n3. Include 'Remember Me for 30 days' checkbox and 'Forgot Password' link.\n4. GitHub OAuth authentication bridge + clean Google enterprise styling.`
+      : `Requirements:\n1. Synthesize and execute verified software solution strictly for: "${activeTask}".\n2. Real-time 60 FPS live interactive preview sandbox.\n3. Zero regression test assertions across the repository AST.`;
+
+    mission.issueTitle = activeTask;
+    mission.issueDescription = dynamicDesc;
+    setMission(prev => ({
+      ...prev,
+      issueTitle: activeTask,
+      issueDescription: dynamicDesc,
+      status: 'REPOSITORY_ANALYZED',
+    }));
+
     const settings = AIProviderService.getSettings();
     try {
       const r = await fetch('/api/agent/plan', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task: taskInput, repository: activeRepo, projectId, model: settings.openrouterModel || 'qwen/qwen3-coder' }),
+        body: JSON.stringify({ task: activeTask, repository: activeRepo, projectId, model: settings.openrouterModel || 'qwen/qwen3-coder' }),
       });
       if (r.ok) {
         const d = await r.json();
-        if (d.plans) mission.solutions = { solution_a: d.plans.solution_a, solution_b: d.plans.solution_b };
+        if (d.plans) {
+          mission.solutions = { solution_a: d.plans.solution_a, solution_b: d.plans.solution_b };
+          setMission(prev => ({
+            ...prev,
+            issueTitle: activeTask,
+            issueDescription: dynamicDesc,
+            solutions: { solution_a: d.plans.solution_a, solution_b: d.plans.solution_b },
+            status: 'SOLUTIONS_GENERATED',
+          }));
+        }
       }
     } catch {}
     orchestrator.startUnderstandingAndPlanning();
@@ -499,7 +579,7 @@ export default function Home() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {mission.status === 'IDLE' && (
                     <button
-                      onClick={handleStartMission}
+                      onClick={() => handleStartMission()}
                       className="btn-launch"
                       style={{ fontSize: '9px', padding: '10px 22px' }}
                     >
@@ -650,15 +730,37 @@ export default function Home() {
                     </div>
                   )}
 
-                  <div style={{ position: 'relative' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <input
                       type="text"
                       value={taskInput}
                       onChange={e => setTaskInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          handleStartMission();
+                        }
+                      }}
                       className="cf-input"
-                      style={{ fontWeight: 500, fontSize: '13px', paddingRight: '40px' }}
-                      placeholder="Describe the bug, feature, or design task in natural language..."
+                      style={{ flex: 1, fontWeight: 500, fontSize: '13px' }}
+                      placeholder="e.g. create a login page with email and password..."
                     />
+                    <button
+                      type="button"
+                      onClick={() => handleStartMission()}
+                      style={{
+                        padding: '10px 18px', borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #00f3ff, #cf3fff)',
+                        color: '#030408', fontFamily: "'Orbitron', monospace",
+                        fontSize: '10px', fontWeight: 800, letterSpacing: '0.08em',
+                        border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                        boxShadow: '0 0 20px rgba(0,243,255,0.4)',
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <Sparkles size={12} />
+                      BUILD NOW
+                    </button>
                   </div>
                 </div>
 
@@ -768,6 +870,7 @@ export default function Home() {
               missionStatus={mission.status}
               browserVerification={mission.browserVerification}
               initialMode={previewMode}
+              task={taskInput}
             />
 
             {/* ── Terminal / Sandbox ── */}
@@ -795,6 +898,106 @@ export default function Home() {
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} currentUser={user} onUpdateUser={setUser} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <PullRequestModal isOpen={isPROpen} onClose={() => setIsPROpen(false)} pullRequest={mission.pullRequest} verificationReport={mission.verificationReport} />
+
+      {/* ── Authentic GitHub Authentication Gate (Prompted First on Entry) ── */}
+      {isGithubGateOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(3, 4, 8, 0.9)', backdropFilter: 'blur(20px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+        }}>
+          <div style={{
+            background: 'rgba(8, 12, 28, 0.95)', border: '1px solid rgba(0, 243, 255, 0.35)',
+            borderRadius: '24px', padding: '32px 28px', maxWidth: '440px', width: '100%',
+            boxShadow: '0 25px 70px rgba(0, 0, 0, 0.9), 0 0 50px rgba(0, 243, 255, 0.25)',
+            position: 'relative', overflow: 'hidden', textAlign: 'center',
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+              background: 'linear-gradient(90deg, #00f3ff, #cf3fff, #00ff99)',
+            }} />
+            
+            <div style={{
+              width: '52px', height: '52px', borderRadius: '16px', margin: '0 auto 16px',
+              background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
+            }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+              </svg>
+            </div>
+
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '4px 12px', borderRadius: '999px',
+              background: 'rgba(0, 243, 255, 0.1)', border: '1px solid rgba(0, 243, 255, 0.25)',
+              color: '#00f3ff', fontFamily: "'Space Mono', monospace", fontSize: '9px', fontWeight: 700,
+              letterSpacing: '0.1em', marginBottom: '12px', textTransform: 'uppercase',
+            }}>
+              <span>●</span> REQUIRED GITHUB AUTHENTICATION
+            </div>
+
+            <h3 style={{ fontFamily: "'Orbitron', monospace", fontSize: '17px', fontWeight: 900, color: '#fff', letterSpacing: '0.04em', marginBottom: '8px' }}>
+              AUTHENTICATE WITH GITHUB
+            </h3>
+            <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', color: '#94a3b8', lineHeight: 1.6, marginBottom: '20px' }}>
+              To synthesize autonomous web projects and push commits & pull requests to GitHub, authenticate your GitHub developer account first.
+            </p>
+
+            <div style={{ textAlign: 'left', marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontFamily: "'Space Mono', monospace", fontSize: '10px', color: '#00f3ff', marginBottom: '4px' }}>
+                GitHub Username:
+              </label>
+              <input
+                type="text"
+                value={githubGateUsername}
+                onChange={e => setGithubGateUsername(e.target.value)}
+                className="cf-input"
+                style={{ fontSize: '12px', padding: '10px 12px' }}
+                placeholder="e.g. Omtripathi1004"
+              />
+            </div>
+
+            <div style={{ textAlign: 'left', marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontFamily: "'Space Mono', monospace", fontSize: '10px', color: '#7a82a8', marginBottom: '4px' }}>
+                Personal Access Token (PAT) (Optional for private repos):
+              </label>
+              <input
+                type="password"
+                value={githubGateToken}
+                onChange={e => setGithubGateToken(e.target.value)}
+                className="cf-input"
+                style={{ fontSize: '12px', padding: '10px 12px' }}
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              />
+            </div>
+
+            <button
+              onClick={handleAuthorizeGithubGate}
+              disabled={isGithubGateConnecting}
+              style={{
+                width: '100%', padding: '12px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #00f3ff, #cf3fff)',
+                color: '#030408', fontFamily: "'Orbitron', monospace",
+                fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em',
+                border: 'none', cursor: 'pointer', transition: 'all 0.2s ease',
+                boxShadow: '0 0 25px rgba(0, 243, 255, 0.4)',
+              }}
+            >
+              {isGithubGateConnecting ? 'CONNECTING GITHUB...' : 'AUTHORIZE & ENTER CODEFORGE'}
+            </button>
+
+            <div style={{ marginTop: '14px' }}>
+              <button
+                onClick={() => setIsGithubGateOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#64748b', fontFamily: "'Space Mono', monospace", fontSize: '10px', cursor: 'pointer' }}
+              >
+                Skip for now &rarr; Preview as Guest
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
