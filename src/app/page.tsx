@@ -258,17 +258,41 @@ export default function Home() {
     if (!activeTask) return;
     audioFx.playClick();
 
-    const isLogin = /login|auth|password|email|sign\s?in|signup/i.test(activeTask);
-    const dynamicDesc = isLogin
+    // ── Auto-Stack Engine: Intelligently shift stack between Frontend (TS) and Backend (PY)
+    const isFrontendIntent = /website|landing|page|login|register|signup|registration|ui|form|component|frontend|css|html|react|portfolio|dashboard/i.test(activeTask);
+    const isBackendIntent = /backend|api|fastapi|redis|database|mutex|lock|concurrency|cgroups|worker|distributed|python|celery|sql/i.test(activeTask);
+
+    let targetRepo = activeRepo;
+    if (isFrontendIntent && activeRepo.language !== 'TypeScript') {
+      const tsRepo = SAMPLE_REPOSITORIES.find(r => r.language === 'TypeScript');
+      if (tsRepo) {
+        targetRepo = tsRepo;
+        setActiveRepo(tsRepo);
+      }
+    } else if (isBackendIntent && activeRepo.language !== 'Python') {
+      const pyRepo = SAMPLE_REPOSITORIES.find(r => r.language === 'Python');
+      if (pyRepo) {
+        targetRepo = pyRepo;
+        setActiveRepo(pyRepo);
+      }
+    }
+
+    const isRegistration = /register|registration|student|enroll|admission|sign\s?up/i.test(activeTask);
+    const isLogin = !isRegistration && /login|auth|password|email|sign\s?in/i.test(activeTask);
+    const dynamicDesc = isRegistration
+      ? `Requirements:\n1. Build an authentic, complete Registration Page with all logical fields: Full Name, Class / Grade, Roll / Student ID Number, Email, Phone Number, Password with show/hide eye toggle, and Department.\n2. Include Terms checkbox and instant client-side validation.\n3. Real-time interactive 60 FPS live preview sandbox across Minimum, Recommended, and Customized styles.`
+      : isLogin
       ? `Requirements:\n1. Build an authentic, responsive login page with clean email & password inputs.\n2. Interactive password show/hide eye toggle with real-time field validation.\n3. Include 'Remember Me for 30 days' checkbox and 'Forgot Password' link.\n4. GitHub OAuth authentication bridge + clean Google enterprise styling.`
       : `Requirements:\n1. Synthesize and execute verified software solution strictly for: "${activeTask}".\n2. Real-time 60 FPS live interactive preview sandbox.\n3. Zero regression test assertions across the repository AST.`;
 
     mission.issueTitle = activeTask;
     mission.issueDescription = dynamicDesc;
+    mission.repository = targetRepo;
     setMission(prev => ({
       ...prev,
       issueTitle: activeTask,
       issueDescription: dynamicDesc,
+      repository: targetRepo,
       status: 'REPOSITORY_ANALYZED',
     }));
 
@@ -276,7 +300,7 @@ export default function Home() {
     try {
       const r = await fetch('/api/agent/plan', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task: activeTask, repository: activeRepo, projectId, model: settings.openrouterModel || 'qwen/qwen3-coder' }),
+        body: JSON.stringify({ task: activeTask, repository: targetRepo, projectId, model: settings.openrouterModel || 'qwen/qwen3-coder' }),
       });
       if (r.ok) {
         const d = await r.json();

@@ -34,10 +34,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
 }) => {
   const [scrolled, setScrolled] = useState(false);
-  const [repoOpen, setRepoOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
-  const repoRef = useRef<HTMLDivElement>(null);
 
   const toggleSound = () => {
     const next = audioFx.toggle();
@@ -49,15 +47,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     const fn = () => setScrolled(window.scrollY > 30);
     window.addEventListener('scroll', fn);
     return () => window.removeEventListener('scroll', fn);
-  }, []);
-
-  useEffect(() => {
-    const fn = (e: MouseEvent) => {
-      if (repoRef.current && !repoRef.current.contains(e.target as Node))
-        setRepoOpen(false);
-    };
-    document.addEventListener('mousedown', fn);
-    return () => document.removeEventListener('mousedown', fn);
   }, []);
 
   const isLanding    = activeTab === 'landing';
@@ -225,117 +214,55 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
-          {/* Repo selector */}
-          <div className="hide-sm" ref={repoRef} style={{ position: 'relative' }}>
-            <button
-              onClick={() => setRepoOpen(!repoOpen)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '7px 14px', borderRadius: '999px',
-                background: 'rgba(6,8,18,0.88)', backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                fontFamily: "'Space Mono', monospace",
-                fontSize: '8px', letterSpacing: '0.14em',
-                textTransform: 'uppercase', color: 'rgba(122,130,168,0.7)',
-                cursor: 'pointer', transition: 'border-color 0.2s ease',
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,243,255,0.25)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'}
-            >
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <circle cx="5" cy="2" r="1.5" stroke="#00f3ff" strokeWidth="0.8"/>
-                <circle cx="2" cy="7" r="1.5" stroke="#cf3fff" strokeWidth="0.8"/>
-                <circle cx="8" cy="7" r="1.5" stroke="#00ff99" strokeWidth="0.8"/>
-                <line x1="5" y1="3.5" x2="2" y2="5.5" stroke="#424868" strokeWidth="0.6"/>
-                <line x1="5" y1="3.5" x2="8" y2="5.5" stroke="#424868" strokeWidth="0.6"/>
-              </svg>
-              <span style={{ maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {activeRepo.name}
-              </span>
-              <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                <path d="M2 3L4 5L6 3" stroke="currentColor" strokeWidth="1"/>
-              </svg>
-            </button>
-
-            {repoOpen && (
-              <div
-                style={{
-                  position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                  minWidth: '220px', borderRadius: '14px', overflow: 'hidden',
-                  background: 'rgba(5,7,16,0.98)', backdropFilter: 'blur(30px)',
-                  border: '1px solid rgba(0,243,255,0.12)',
-                  boxShadow: '0 20px 60px rgba(0,0,0,0.9), 0 0 0 0.5px rgba(255,255,255,0.04)',
-                  zIndex: 200,
-                }}
-              >
-                <div style={{
-                  padding: '10px 16px 8px',
-                  fontFamily: "'Space Mono', monospace",
-                  fontSize: '7px', letterSpacing: '0.22em',
-                  textTransform: 'uppercase', color: '#252840',
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
-                }}>
-                  Repositories
-                </div>
-                {SAMPLE_REPOSITORIES.map(r => {
-                  const isActive = activeRepo.id === r.id;
-                  return (
-                    <button
-                      key={r.id}
-                      onClick={() => { onSelectRepo(r); setRepoOpen(false); }}
-                      style={{
-                        display: 'block', width: '100%', textAlign: 'left',
-                        padding: '10px 16px',
-                        background: isActive ? 'rgba(0,243,255,0.05)' : 'transparent',
-                        borderLeft: `2px solid ${isActive ? '#00f3ff' : 'transparent'}`,
-                        borderTop: 'none', borderRight: 'none', borderBottom: 'none',
-                        cursor: 'pointer', transition: 'background 0.15s ease',
-                      }}
-                      onMouseEnter={e => !isActive && (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                      onMouseLeave={e => !isActive && (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <div style={{
-                        fontFamily: "'Space Mono', monospace", fontSize: '10px',
-                        color: isActive ? '#00f3ff' : '#7a82a8', fontWeight: 700,
-                      }}>
-                        {r.fullName}
-                      </div>
-                      <div style={{
-                        fontFamily: "'Space Mono', monospace", fontSize: '8px',
-                        color: '#424868', marginTop: '2px', letterSpacing: '0.1em',
-                      }}>
-                        {r.language}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+          {/* ── Auto-Stack Engine Indicator (Autonomous Frontend TS / Backend PY Shifting) ── */}
+          <div
+            className="hide-sm"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '7px 13px', borderRadius: '999px',
+              background: 'rgba(6,8,18,0.88)', backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(0,243,255,0.25)',
+              fontFamily: "'Space Mono', monospace",
+              fontSize: '8px', letterSpacing: '0.12em',
+              textTransform: 'uppercase', color: '#00f3ff',
+              boxShadow: '0 0 16px -4px rgba(0,243,255,0.25)',
+            }}
+            title="Auto-Stack Engine Active: Automatically detects prompt intent and shifts server execution between Frontend (TypeScript / Next.js) and Backend (Python / FastAPI / Redis)."
+          >
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: activeRepo.language === 'TypeScript' ? '#00f3ff' : '#00ff99',
+              boxShadow: `0 0 8px ${activeRepo.language === 'TypeScript' ? '#00f3ff' : '#00ff99'}`,
+              display: 'inline-block',
+            }} />
+            <span style={{ fontWeight: 700 }}>
+              AUTO-STACK: {activeRepo.language === 'TypeScript' ? 'FRONTEND (TS)' : 'BACKEND (PY)'}
+            </span>
           </div>
 
-          {/* Qwen3 status */}
+          {/* AI Engine Status: Gemini 2.5 Flash + Qwen3 */}
           <button
             onClick={onOpenSettings}
-            title="Configure AI Provider"
+            title="AI Engine Active: Google Gemini 2.5 Flash & Qwen3-Coder"
             style={{
               display: 'flex', alignItems: 'center', gap: '6px',
               padding: '7px 12px', borderRadius: '999px',
               background: 'rgba(6,8,18,0.88)', backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.08)',
               fontFamily: "'Space Mono', monospace",
-              fontSize: '8px', letterSpacing: '0.14em',
-              textTransform: 'uppercase', color: 'rgba(122,130,168,0.6)',
-              cursor: 'pointer', transition: 'border-color 0.2s ease',
+              fontSize: '8px', letterSpacing: '0.12em',
+              textTransform: 'uppercase', color: 'rgba(122,130,168,0.7)',
+              cursor: 'pointer', transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,255,153,0.3)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}
+            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,255,153,0.4)'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
           >
             <span style={{
               width: 5, height: 5, borderRadius: '50%',
               background: '#00ff99', boxShadow: '0 0 6px #00ff99',
-              display: 'inline-block', animation: 'pulse-live 2s ease-in-out infinite',
+              display: 'inline-block',
             }} />
-            QWEN3
+            <span>GEMINI 2.5 • QWEN3</span>
           </button>
 
           {/* Copilot toggle */}

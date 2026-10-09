@@ -550,58 +550,7 @@ export const CinematicLanding: React.FC<CinematicLandingProps> = ({
         </div>
       </div>
 
-      {/* ── Left Sidebar Overlay: "WHAT ARE YOU LOOKING FOR?" (Exact Active Theory) ── */}
-      <aside
-        className="fixed left-8 top-1/2 -translate-y-1/2 z-30 flex flex-col pointer-events-auto"
-        style={{ width: '220px' }}
-      >
-        <p
-          className="font-mono text-[9px] tracking-[0.25em] text-slate-500 uppercase mb-4"
-          style={{ fontFamily: "'Space Mono', monospace" }}
-        >
-          WHAT ARE YOU LOOKING FOR?
-        </p>
 
-        <div className="flex flex-col space-y-2.5 text-xs font-mono">
-          {[
-            { id: 'all',          label: 'ALL MISSIONS',         idx: 0 },
-            { id: 'concurrency',  label: 'CONCURRENCY & REDIS',  idx: 0 },
-            { id: 'distributed',  label: 'DISTRIBUTED SYSTEMS',  idx: 1 },
-            { id: 'ast',          label: 'AST SELF-REPAIR',      idx: 2 },
-            { id: 'security',     label: 'CRYPTOGRAPHIC SHIELD', idx: 3 },
-            { id: 'gpu',          label: 'GPU ACCELERATION',     idx: 4 },
-          ].map((item) => {
-            const isSelected = activeCategoryFilter === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleFilterClick(item.id)}
-                className={`flex items-center gap-2 text-left transition-all duration-300 ${
-                  isSelected
-                    ? 'text-cyan-300 font-bold translate-x-1.5'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-                style={{ fontSize: '11px' }}
-              >
-                <span className={isSelected ? 'text-cyan-400' : 'text-slate-600'}>-&gt;</span>
-                <span className={isSelected ? 'drop-shadow-[0_0_8px_rgba(0,243,255,0.4)]' : ''}>
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Ask Me Anything capsule — wired to AI Copilot */}
-        <button
-          onClick={onToggleCopilot || onEnterWorkspace}
-          className="mt-8 px-4 py-2.5 rounded-full border border-purple-500/30 bg-purple-950/20 hover:bg-purple-900/30 text-purple-300 text-xs font-mono flex items-center justify-between transition-all duration-300 hover:border-purple-400/60 shadow-[0_0_15px_rgba(207,63,255,0.15)] group"
-          title="Open AI Copilot"
-        >
-          <span>ASK ME ANYTHING...</span>
-          <Bot className="w-3.5 h-3.5 text-purple-400 group-hover:rotate-12 transition-transform" />
-        </button>
-      </aside>
 
       {/* ── Right Edge Minimalist Scroll Progress Track ── */}
       <div className="fixed right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 pointer-events-none">
