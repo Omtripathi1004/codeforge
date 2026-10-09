@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { Play, RotateCcw, GitPullRequest, Bot, ArrowRight, Activity, Cpu, Zap, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
+import { Play, RotateCcw, GitPullRequest, Bot, ArrowRight, Activity, Cpu, Zap, CheckCircle2, ShieldCheck, Sparkles, Mic, MicOff, Image as ImageIcon, X } from 'lucide-react';
 import { audioFx } from '../lib/audioFx';
 import { Navbar, NavTabType } from '../components/Navbar';
 import { CinematicLanding } from '../components/CinematicLanding';
@@ -97,6 +97,52 @@ export default function Home() {
   const [taskInput, setTaskInput]     = useState(
     'Fix JWT Race Condition & Token Replay during Concurrent Token Refresh'
   );
+  const [previewMode, setPreviewMode] = useState<'minimum' | 'recommended' | 'custom'>('recommended');
+  const [isRecording, setIsRecording] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const toggleSpeechRecognition = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech Recognition is supported in Chrome, Edge, and modern browsers.');
+      return;
+    }
+    if (isRecording) {
+      setIsRecording(false);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onstart = () => {
+      setIsRecording(true);
+      audioFx.playClick();
+    };
+    recognition.onresult = (e: any) => {
+      const transcript = e.results[0][0].transcript;
+      setTaskInput(prev => prev ? `${prev} ${transcript}` : transcript);
+      setIsRecording(false);
+      audioFx.playSuccess();
+    };
+    recognition.onerror = () => setIsRecording(false);
+    recognition.onend = () => setIsRecording(false);
+    recognition.start();
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setAttachedImage(ev.target?.result as string);
+        audioFx.playSuccess();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Session init
   useEffect(() => {
@@ -201,8 +247,8 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#030408', color: '#c8cde8', position: 'relative' }}>
-      {/* ── Global 3D WebGL Active Theory Atmospheric Backdrop ── */}
-      <ActiveTheoryBackground showSpine={activeNavTab === 'landing'} />
+      {/* ── Global 3D WebGL Active Theory Atmospheric Backdrop (All Pages) ── */}
+      <ActiveTheoryBackground showSpine={true} />
 
       <Navbar
         user={user} activeRepo={activeRepo} onSelectRepo={handleRepoChange}
@@ -529,23 +575,91 @@ export default function Home() {
                   </span>
                 </div>
 
-                {/* Objective input */}
+                {/* Multimodal Agentic Objective input */}
                 <div style={{ marginBottom: '14px' }}>
-                  <label style={{
-                    fontFamily: "'Space Mono', monospace", fontSize: '8px',
-                    letterSpacing: '0.2em', textTransform: 'uppercase',
-                    color: '#252840', display: 'block', marginBottom: '8px',
-                  }}>
-                    Engineering Objective
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{
+                      fontFamily: "'Space Mono', monospace", fontSize: '8px',
+                      letterSpacing: '0.2em', textTransform: 'uppercase',
+                      color: '#00f3ff', display: 'flex', alignItems: 'center', gap: '6px',
+                    }}>
+                      <Sparkles size={11} color="#00f3ff" />
+                      Multimodal Engineering Prompt (Text • Voice • Image)
+                    </label>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                          padding: '4px 10px', borderRadius: '8px',
+                          background: attachedImage ? 'rgba(0,243,255,0.2)' : 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${attachedImage ? '#00f3ff' : 'rgba(255,255,255,0.08)'}`,
+                          color: attachedImage ? '#00f3ff' : '#94a3b8',
+                          fontFamily: "'Space Mono', monospace", fontSize: '9px',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px',
+                        }}
+                        title="Attach visual mockup or UI design image"
+                      >
+                        <ImageIcon size={11} />
+                        {attachedImage ? 'IMAGE ATTACHED' : 'ADD IMAGE'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={toggleSpeechRecognition}
+                        style={{
+                          padding: '4px 10px', borderRadius: '8px',
+                          background: isRecording ? 'rgba(255,75,75,0.25)' : 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${isRecording ? '#ff4b4b' : 'rgba(255,255,255,0.08)'}`,
+                          color: isRecording ? '#ff4b4b' : '#94a3b8',
+                          fontFamily: "'Space Mono', monospace", fontSize: '9px',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px',
+                        }}
+                        title="Speak prompt with microphone"
+                      >
+                        {isRecording ? <MicOff size={11} className="animate-pulse" /> : <Mic size={11} />}
+                        {isRecording ? 'LISTENING...' : 'VOICE MIC'}
+                      </button>
+                    </div>
+                  </div>
+
                   <input
-                    type="text"
-                    value={taskInput}
-                    onChange={e => setTaskInput(e.target.value)}
-                    className="cf-input"
-                    style={{ fontWeight: 500, fontSize: '13px' }}
-                    placeholder="Describe the bug, feature, or task..."
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    style={{ display: 'none' }}
                   />
+
+                  {attachedImage && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '8px 12px', borderRadius: '10px',
+                      background: 'rgba(0,243,255,0.05)', border: '1px solid rgba(0,243,255,0.2)',
+                      marginBottom: '10px',
+                    }}>
+                      <img src={attachedImage} alt="Attachment" style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover' }} />
+                      <div style={{ flex: 1, fontFamily: "'Space Mono', monospace", fontSize: '9px', color: '#00f3ff' }}>
+                        Image visual context attached to prompt
+                      </div>
+                      <button
+                        onClick={() => setAttachedImage(null)}
+                        style={{ background: 'transparent', border: 'none', color: '#ff6b6b', cursor: 'pointer' }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      value={taskInput}
+                      onChange={e => setTaskInput(e.target.value)}
+                      className="cf-input"
+                      style={{ fontWeight: 500, fontSize: '13px', paddingRight: '40px' }}
+                      placeholder="Describe the bug, feature, or design task in natural language..."
+                    />
+                  </div>
                 </div>
 
                 {/* Issue description */}
@@ -638,6 +752,11 @@ export default function Home() {
               solutionB={mission.solutions.solution_b}
               selectedSolutionId={mission.selectedSolutionId}
               onSelectSolution={handleSelectSolution}
+              onPreviewTemplate={(mode) => {
+                setPreviewMode(mode);
+                const el = document.getElementById('sec-preview');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
               disabled={['CODING_STARTED','SANDBOX_STARTED','TEST_STARTED'].includes(mission.status)}
             />
 
@@ -648,6 +767,7 @@ export default function Home() {
               solution={currentActiveSolution}
               missionStatus={mission.status}
               browserVerification={mission.browserVerification}
+              initialMode={previewMode}
             />
 
             {/* ── Terminal / Sandbox ── */}
