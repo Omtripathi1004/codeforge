@@ -17,10 +17,11 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 
     // Model selection: support Gemini, Qwen, or DeepSeek
-    let model = 'google/gemini-2.5-flash';
+    // Model selection: support Qwen, DeepSeek, or OpenAI
+    let model = process.env.OPENROUTER_MODEL || 'qwen/qwen3-coder';
     if (modelPreference === 'qwen') model = 'qwen/qwen3-coder';
     else if (modelPreference === 'deepseek') model = 'deepseek/deepseek-chat';
-    else if (modelPreference === 'gemini') model = 'google/gemini-2.5-flash';
+    else if (modelPreference === 'gemini') model = 'qwen/qwen3-coder';
 
     let systemPrompt = '';
     if (category === 'story') {
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
             model,
             messages,
             temperature: 0.8,
-            max_tokens: 3000
+            max_tokens: 1000
           })
         });
 

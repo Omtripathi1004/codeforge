@@ -21,6 +21,9 @@ export class AIProviderService {
     maxTokens: 4096,
     sandboxCpuLimit: '2.0 vCPU',
     sandboxMemoryLimit: '4096 MB',
+    recipientEmail: 'sadhanaom03@gmail.com',
+    recipientPhone: '+919555681533',
+    twilioPhoneNumber: '9555681533',
     n8nWebhookUrl: 'https://n8n.internal.workflow/webhook/codeforge-mission-events',
     n8nEnabled: true,
   };

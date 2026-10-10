@@ -41,6 +41,8 @@ export const SolutionArchitectCard: React.FC<SolutionArchitectCardProps> = ({
     "Synthesize recommended components with custom UI styling, responsive controls, and domain parameters."
   );
 
+  const [notifChannel, setNotifChannel] = useState<'sms' | 'email' | 'silent'>('email');
+
   const tabs = [
     { id: 'minimum' as const,     label: '1. MINIMUM CHANGE',  color: '#00f3ff', tag: 'CONSERVATIVE' },
     { id: 'recommended' as const, label: '2. RECOMMENDED',     color: '#cf3fff', tag: '3D ACTIVE THEORY', recommended: true },
@@ -115,6 +117,61 @@ export const SolutionArchitectCard: React.FC<SolutionArchitectCardProps> = ({
               </span>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Real-time Notification Dispatch Selector */}
+      <div style={{
+        margin: '0 16px 12px 16px', padding: '10px 14px', borderRadius: '10px',
+        background: 'rgba(10, 15, 28, 0.75)', border: '1px solid rgba(0, 243, 255, 0.2)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '12px' }}>🔔</span>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', fontWeight: 600, color: '#e2e8f0' }}>
+            Alert on Build Completion:
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            type="button"
+            onClick={() => setNotifChannel('sms')}
+            style={{
+              padding: '4px 10px', borderRadius: '6px', fontSize: '9px', fontFamily: "'Space Mono', monospace",
+              cursor: 'pointer', transition: 'all 0.2s',
+              background: notifChannel === 'sms' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)',
+              color: notifChannel === 'sms' ? '#fbbf24' : '#64748b',
+              border: notifChannel === 'sms' ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.08)'
+            }}
+          >
+            📱 SMS Alert (+919555681533)
+          </button>
+          <button
+            type="button"
+            onClick={() => setNotifChannel('email')}
+            style={{
+              padding: '4px 10px', borderRadius: '6px', fontSize: '9px', fontFamily: "'Space Mono', monospace",
+              cursor: 'pointer', transition: 'all 0.2s',
+              background: notifChannel === 'email' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.03)',
+              color: notifChannel === 'email' ? '#34d399' : '#64748b',
+              border: notifChannel === 'email' ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.08)'
+            }}
+          >
+            ✉️ Email (sadhanaom03@gmail.com)
+          </button>
+          <button
+            type="button"
+            onClick={() => setNotifChannel('silent')}
+            style={{
+              padding: '4px 10px', borderRadius: '6px', fontSize: '9px', fontFamily: "'Space Mono', monospace",
+              cursor: 'pointer', transition: 'all 0.2s',
+              background: notifChannel === 'silent' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(255,255,255,0.03)',
+              color: notifChannel === 'silent' ? '#cbd5e1' : '#64748b',
+              border: notifChannel === 'silent' ? '1px solid #94a3b8' : '1px solid rgba(255,255,255,0.08)'
+            }}
+          >
+            🔕 In-App Only
+          </button>
         </div>
       </div>
 

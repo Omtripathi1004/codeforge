@@ -15,6 +15,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
   const [settings, setSettings] = useState<AIProviderSettings>(() => AIProviderService.getSettings());
   const [activeTab, setActiveTab] = useState<'ai' | 'github' | 'deploy' | 'notifications' | 'sandbox'>('ai');
   const [saved, setSaved] = useState(false);
+  const [testSending, setTestSending] = useState<'sms' | 'email' | null>(null);
+  const [testStatus, setTestStatus] = useState<string | null>(null);
+
+  const handleTestNotification = async (type: 'sms' | 'email') => {
+    setTestSending(type);
+    setTestStatus(null);
+    try {
+      const res = await fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          to: type === 'sms' ? settings.recipientPhone : settings.recipientEmail,
+          message: `CodeForge Alert: Live autonomous agent verification pipeline operational for ${type.toUpperCase()}.`,
+          twilioSid: settings.twilioSid,
+          twilioAuthToken: settings.twilioAuthToken,
+          fromPhone: settings.twilioPhoneNumber,
+          resendApiKey: settings.resendApiKey,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTestStatus(`✓ ${type.toUpperCase()} sent successfully! ID: ${data.messageId || 'Delivered'}`);
+      } else {
+        setTestStatus(`⚠️ ${type.toUpperCase()} dispatch: ${data.error || 'Failed'}`);
+      }
+    } catch (e: any) {
+      setTestStatus(`⚠️ Network error: ${e.message}`);
+    } finally {
+      setTestSending(null);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -262,9 +294,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 type="password"
                 value={settings.resendApiKey || ''}
                 onChange={(e) => setSettings({ ...settings, resendApiKey: e.target.value })}
-                placeholder="re_xxxxxxxxxxxx"
+                placeholder="Resend API Key (re_...)"
                 className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2 text-xs"
               />
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={settings.recipientEmail || ''}
+                  onChange={(e) => setSettings({ ...settings, recipientEmail: e.target.value })}
+                  placeholder="Recipient Email (e.g. sadhanaom03@gmail.com)"
+                  className="flex-1 bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2 text-xs"
+                />
+                <button
+                  type="button"
+                  disabled={testSending === 'email'}
+                  onClick={() => handleTestNotification('email')}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold"
+                >
+                  {testSending === 'email' ? 'Sending...' : 'Test Email'}
+                </button>
+              </div>
             </div>
 
             {/* SMS */}
@@ -291,7 +340,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                   className="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2 text-xs"
                 />
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={settings.twilioPhoneNumber || ''}
+                  onChange={(e) => setSettings({ ...settings, twilioPhoneNumber: e.target.value })}
+                  placeholder="From Twilio Number (e.g. +1234567890)"
+                  className="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2 text-xs"
+                />
+                <input
+                  type="text"
+                  value={settings.recipientPhone || ''}
+                  onChange={(e) => setSettings({ ...settings, recipientPhone: e.target.value })}
+                  placeholder="Recipient Mobile (e.g. +919555681533)"
+                  className="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2 text-xs"
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  disabled={testSending === 'sms'}
+                  onClick={() => handleTestNotification('sms')}
+                  className="px-3 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 text-amber-300 text-[10px] font-bold"
+                >
+                  {testSending === 'sms' ? 'Sending...' : 'Test SMS'}
+                </button>
+              </div>
             </div>
+
+            {testStatus && (
+              <div className="p-2 rounded-lg bg-slate-900 border border-cyan-500/30 text-[11px] text-cyan-300">
+                {testStatus}
+              </div>
+            )}
           </div>
         )}
 

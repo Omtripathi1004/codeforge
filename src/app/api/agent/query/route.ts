@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         model,
         messages,
         temperature,
-        max_tokens: maxTokens
+        max_tokens: Math.min(maxTokens || 1000, 1000)
       })
     });
 

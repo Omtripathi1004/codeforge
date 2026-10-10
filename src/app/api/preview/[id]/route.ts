@@ -85,7 +85,7 @@ CRITICAL LOGICAL REQUIREMENTS:
               { role: 'user', content: `Generate the complete, working HTML application for: "${currentTask}". Design Mode: ${mode}.` },
             ],
             temperature: 0.5,
-            max_tokens: 2600,
+            max_tokens: 1100,
           }),
           signal: controller.signal,
         });
@@ -98,7 +98,10 @@ CRITICAL LOGICAL REQUIREMENTS:
           if (rawContent) {
             // Strip any accidental markdown formatting
             rawContent = rawContent.replace(/^```(html)?\s*/i, '').replace(/```$/i, '').trim();
-            if (rawContent.includes('<html') && rawContent.includes('</html>')) {
+            if (rawContent.includes('<html') || rawContent.includes('<!DOCTYPE')) {
+              if (!rawContent.includes('</html>')) {
+                rawContent += '\n</script></body></html>';
+              }
               previewCache.set(cacheKey, rawContent);
               return new NextResponse(rawContent, {
                 status: 200,

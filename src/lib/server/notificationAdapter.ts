@@ -97,7 +97,7 @@ export class NotificationAdapter {
     fromEmail?: string;
   }): Promise<SendEmailResult> {
     const apiKey = params.resendApiKey || process.env.RESEND_API_KEY || process.env.EMAIL_PROVIDER_API_KEY;
-    const from = params.fromEmail || process.env.EMAIL_FROM_ADDRESS || 'CodeForge <notifications@codeforge.dev>';
+    const from = params.fromEmail || process.env.EMAIL_FROM_ADDRESS || 'CodeForge <onboarding@resend.dev>';
     const to = params.to || process.env.NOTIFICATION_RECIPIENT_EMAIL;
 
     if (!apiKey || !to) {
@@ -169,18 +169,18 @@ export class NotificationAdapter {
     };
   }): Promise<NotificationAdapterStatus> {
     const { mission, settings } = params;
-    const hasExplicitSettings = settings !== undefined;
+    const isExplicitlyEmpty = settings !== undefined && Object.keys(settings).length === 0;
 
-    const resendApiKey = settings?.resendApiKey || (!hasExplicitSettings ? (process.env.RESEND_API_KEY || process.env.EMAIL_PROVIDER_API_KEY) : undefined);
-    const recipientEmail = settings?.recipientEmail || (!hasExplicitSettings ? process.env.NOTIFICATION_RECIPIENT_EMAIL : undefined);
+    const resendApiKey = settings?.resendApiKey || (!isExplicitlyEmpty ? (process.env.RESEND_API_KEY || process.env.EMAIL_PROVIDER_API_KEY) : undefined);
+    const recipientEmail = settings?.recipientEmail || (!isExplicitlyEmpty ? process.env.NOTIFICATION_RECIPIENT_EMAIL : undefined);
 
-    const twilioSid = settings?.twilioSid || (!hasExplicitSettings ? (process.env.TWILIO_ACCOUNT_SID || process.env.TWILIO_SID) : undefined);
-    const twilioAuthToken = settings?.twilioAuthToken || (!hasExplicitSettings ? process.env.TWILIO_AUTH_TOKEN : undefined);
-    const twilioPhoneNumber = settings?.twilioPhoneNumber || (!hasExplicitSettings ? process.env.TWILIO_PHONE_NUMBER : undefined);
-    const recipientPhone = settings?.recipientPhone || (!hasExplicitSettings ? process.env.NOTIFICATION_RECIPIENT_PHONE : undefined);
+    const twilioSid = settings?.twilioSid || (!isExplicitlyEmpty ? (process.env.TWILIO_ACCOUNT_SID || process.env.TWILIO_SID) : undefined);
+    const twilioAuthToken = settings?.twilioAuthToken || (!isExplicitlyEmpty ? process.env.TWILIO_AUTH_TOKEN : undefined);
+    const twilioPhoneNumber = settings?.twilioPhoneNumber || (!isExplicitlyEmpty ? process.env.TWILIO_PHONE_NUMBER : undefined);
+    const recipientPhone = settings?.recipientPhone || (!isExplicitlyEmpty ? process.env.NOTIFICATION_RECIPIENT_PHONE : undefined);
 
-    const n8nWebhookUrl = settings?.n8nWebhookUrl || (!hasExplicitSettings ? process.env.N8N_WEBHOOK_URL : undefined);
-    const n8nEnabled = settings?.n8nEnabled ?? (!hasExplicitSettings ? (process.env.N8N_ENABLED === 'true') : false);
+    const n8nWebhookUrl = settings?.n8nWebhookUrl || (!isExplicitlyEmpty ? process.env.N8N_WEBHOOK_URL : undefined);
+    const n8nEnabled = settings?.n8nEnabled ?? (!isExplicitlyEmpty ? (process.env.N8N_ENABLED === 'true') : false);
 
     const status: NotificationAdapterStatus = {
       email: {
