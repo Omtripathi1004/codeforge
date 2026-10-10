@@ -1,6 +1,14 @@
 import os
-from typing import List, Union
-from pydantic_settings import BaseSettings
+from typing import List, Union, Any
+
+try:
+    from pydantic_settings import BaseSettings, SettingsConfigDict  # type: ignore
+except Exception:  # pragma: no cover
+    try:
+        from pydantic import BaseSettings  # type: ignore
+    except Exception:
+        BaseSettings: Any = object  # type: ignore
+    SettingsConfigDict: Any = dict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "CodeForge Autonomous SWE Engine"
@@ -28,7 +36,7 @@ class Settings(BaseSettings):
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_MODEL: str = "qwen/qwen3-coder"
-    OPENROUTER_MAX_TOKENS: int = 4096
+    OPENROUTER_MAX_TOKENS: int = 2000
     OPENROUTER_TEMPERATURE: float = 0.2
     
     # GitHub Integration
@@ -53,9 +61,6 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_PHONE_NUMBER: str = ""
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "allow"
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="allow")
 
 settings = Settings()

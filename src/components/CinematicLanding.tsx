@@ -529,29 +529,6 @@ export const CinematicLanding: React.FC<CinematicLandingProps> = ({
       onWheel={handleWheel}
       style={{ perspective: '1400px' }}
     >
-      {/* Active Theory Top Left HUD Branding */}
-      <div className="fixed top-6 left-8 z-30 flex items-center gap-3 pointer-events-auto">
-        <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_12px_#00f3ff]" />
-        <div>
-          <span
-            style={{
-              fontFamily: "'Orbitron', monospace",
-              fontSize: '12px',
-              fontWeight: 800,
-              letterSpacing: '0.12em',
-              color: '#f8fafc',
-            }}
-          >
-            CODEFORGE
-          </span>
-          <span className="ml-2 px-2 py-0.5 rounded-full text-[9px] font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-            ACTIVE THEORY WORKSPACE
-          </span>
-        </div>
-      </div>
-
-
-
       {/* ── Right Edge Minimalist Scroll Progress Track ── */}
       <div className="fixed right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 pointer-events-none">
         {WORK_PROJECTS.map((_, i) => (

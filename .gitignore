@@ -20,6 +20,12 @@ dist/
 # Vercel & Deployment
 .vercel
 
+# Agent & IDE workspace files
+.agent/
+.agents/
+.gemini/
+.gsd/
+
 # Logs & Runtime storage
 npm-debug.log*
 yarn-debug.log*
@@ -43,8 +49,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
+!src/lib/
 parts/
 sdist/
 var/

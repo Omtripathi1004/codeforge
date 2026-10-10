@@ -2,15 +2,26 @@
 CodeForge Autonomous Backend - Master FastAPI Application.
 Built for the Nebius × NVIDIA Global AI Hackathon (Coding & Agentic Engineering).
 """
+import sys
+import os
+_backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
+
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
 
-from app.core.config import settings
-from app.db.base import init_db
-from app.api.v1.api import api_router
+try:
+    from app.core.config import settings
+    from app.db.base import init_db
+    from app.api.v1.api import api_router
+except ImportError:
+    from backend.app.core.config import settings
+    from backend.app.db.base import init_db
+    from backend.app.api.v1.api import api_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

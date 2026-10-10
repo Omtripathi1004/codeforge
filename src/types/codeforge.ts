@@ -377,9 +377,11 @@ export interface AIProviderSettings {
   vercelToken?: string;
   vercelProjectId?: string;
   resendApiKey?: string;
+  recipientEmail?: string;
   twilioSid?: string;
   twilioAuthToken?: string;
   twilioPhoneNumber?: string;
+  recipientPhone?: string;
   n8nWebhookUrl: string;
   n8nEnabled: boolean;
 }

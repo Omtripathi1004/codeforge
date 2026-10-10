@@ -316,6 +316,49 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
             </div>
           </div>
 
+          {/* Active Mode Banner */}
+          <div
+            className="px-3.5 py-2 rounded-lg border text-xs font-mono flex items-center justify-between"
+            style={{
+              background:
+                templateMode === 'minimum'
+                  ? 'rgba(0, 243, 255, 0.05)'
+                  : templateMode === 'recommended'
+                  ? 'rgba(207, 63, 255, 0.06)'
+                  : 'rgba(255, 170, 0, 0.06)',
+              borderColor:
+                templateMode === 'minimum'
+                  ? 'rgba(0, 243, 255, 0.25)'
+                  : templateMode === 'recommended'
+                  ? 'rgba(207, 63, 255, 0.3)'
+                  : 'rgba(255, 170, 0, 0.3)',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{
+                  background:
+                    templateMode === 'minimum'
+                      ? '#00f3ff'
+                      : templateMode === 'recommended'
+                      ? '#cf3fff'
+                      : '#ffaa00',
+                }}
+              />
+              <span className="font-bold text-white">
+                {templateMode === 'minimum' && '1. MINIMUM CHANGE (Google Clean Enterprise Standard)'}
+                {templateMode === 'recommended' && '2. RECOMMENDED (3D Active Theory Obsidian Cyber Portal)'}
+                {templateMode === 'custom' && '3. CUSTOMIZED (Interactive Bespoke Studio Theme)'}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400">
+              {templateMode === 'minimum' && 'White card, Google-blue accents, accessible fields, 100/100 Core Web Vitals'}
+              {templateMode === 'recommended' && 'Obsidian theme, interactive 60 FPS 3D canvas particles, glowing neon cards'}
+              {templateMode === 'custom' && 'Dynamic theme toolbar with Red, Cyan, Amber, Violet & Green color swatches'}
+            </span>
+          </div>
+
           {/* Iframe Viewport Container */}
           <div
             className="w-full flex justify-center rounded-xl p-1 relative"

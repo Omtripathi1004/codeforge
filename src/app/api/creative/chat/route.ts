@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authenticateRequest } from '@/lib/server/auth';
+import { Database } from '@/lib/server/db';
+import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = authenticateRequest(req);
     const body = await req.json();
     const { prompt, category = 'chat', modelPreference, history = [] } = body;
 
@@ -59,6 +63,19 @@ export async function POST(req: NextRequest) {
           const data = await response.json();
           const content = data.choices?.[0]?.message?.content;
           if (content) {
+            if (auth) {
+              try {
+                Database.saveStudioArtifact({
+                  id: `art_${crypto.randomBytes(6).toString('hex')}`,
+                  userId: auth.user.id,
+                  title: prompt.slice(0, 40),
+                  category: category === 'art' ? 'ui_concept' : 'storyboard',
+                  prompt,
+                  content,
+                  createdAt: new Date().toISOString(),
+                });
+              } catch {}
+            }
             return NextResponse.json({
               reply: content,
               modelUsed: model,
