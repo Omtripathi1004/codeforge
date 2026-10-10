@@ -168,18 +168,19 @@ export class NotificationAdapter {
       n8nEnabled?: boolean;
     };
   }): Promise<NotificationAdapterStatus> {
-    const { mission, settings = {} } = params;
+    const { mission, settings } = params;
+    const hasExplicitSettings = settings !== undefined;
 
-    const resendApiKey = settings.resendApiKey || process.env.RESEND_API_KEY || process.env.EMAIL_PROVIDER_API_KEY;
-    const recipientEmail = settings.recipientEmail || process.env.NOTIFICATION_RECIPIENT_EMAIL;
+    const resendApiKey = settings?.resendApiKey || (!hasExplicitSettings ? (process.env.RESEND_API_KEY || process.env.EMAIL_PROVIDER_API_KEY) : undefined);
+    const recipientEmail = settings?.recipientEmail || (!hasExplicitSettings ? process.env.NOTIFICATION_RECIPIENT_EMAIL : undefined);
 
-    const twilioSid = settings.twilioSid || process.env.TWILIO_ACCOUNT_SID || process.env.TWILIO_SID;
-    const twilioAuthToken = settings.twilioAuthToken || process.env.TWILIO_AUTH_TOKEN;
-    const twilioPhoneNumber = settings.twilioPhoneNumber || process.env.TWILIO_PHONE_NUMBER;
-    const recipientPhone = settings.recipientPhone || process.env.NOTIFICATION_RECIPIENT_PHONE;
+    const twilioSid = settings?.twilioSid || (!hasExplicitSettings ? (process.env.TWILIO_ACCOUNT_SID || process.env.TWILIO_SID) : undefined);
+    const twilioAuthToken = settings?.twilioAuthToken || (!hasExplicitSettings ? process.env.TWILIO_AUTH_TOKEN : undefined);
+    const twilioPhoneNumber = settings?.twilioPhoneNumber || (!hasExplicitSettings ? process.env.TWILIO_PHONE_NUMBER : undefined);
+    const recipientPhone = settings?.recipientPhone || (!hasExplicitSettings ? process.env.NOTIFICATION_RECIPIENT_PHONE : undefined);
 
-    const n8nWebhookUrl = settings.n8nWebhookUrl || process.env.N8N_WEBHOOK_URL;
-    const n8nEnabled = settings.n8nEnabled ?? (process.env.N8N_ENABLED === 'true');
+    const n8nWebhookUrl = settings?.n8nWebhookUrl || (!hasExplicitSettings ? process.env.N8N_WEBHOOK_URL : undefined);
+    const n8nEnabled = settings?.n8nEnabled ?? (!hasExplicitSettings ? (process.env.N8N_ENABLED === 'true') : false);
 
     const status: NotificationAdapterStatus = {
       email: {

@@ -38,7 +38,7 @@ export const SolutionArchitectCard: React.FC<SolutionArchitectCardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'minimum' | 'recommended' | 'custom'>('recommended');
   const [customPrompt, setCustomPrompt] = useState(
-    "Synthesize recommended token security but enforce isolated database transactions with custom analytics."
+    "Synthesize recommended components with custom UI styling, responsive controls, and domain parameters."
   );
 
   const tabs = [

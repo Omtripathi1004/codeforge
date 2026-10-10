@@ -96,7 +96,7 @@ export default function Home() {
   const [isCopilotOpen, setIsCopilotOpen]   = useState(false);
   const [isPROpen, setIsPROpen]       = useState(false);
   const [taskInput, setTaskInput]     = useState(
-    'Fix JWT Race Condition & Token Replay during Concurrent Token Refresh'
+    'Build a modern interactive calculator with live LCD display'
   );
   const [previewMode, setPreviewMode] = useState<'minimum' | 'recommended' | 'custom'>('recommended');
   const [isRecording, setIsRecording] = useState(false);
@@ -226,7 +226,7 @@ export default function Home() {
     audioFx.playClick();
 
     // ── Auto-Stack Engine: Intelligently shift stack between Frontend (TS) and Backend (PY)
-    const isFrontendIntent = /website|landing|page|login|register|signup|registration|ui|form|component|frontend|css|html|react|portfolio|dashboard/i.test(activeTask);
+    const isFrontendIntent = /website|landing|page|login|register|signup|registration|ui|form|component|frontend|css|html|react|portfolio|dashboard|calc|calculator|math|arithmetic|keypad|display|tool|widget/i.test(activeTask);
     const isBackendIntent = /backend|api|fastapi|redis|database|mutex|lock|concurrency|cgroups|worker|distributed|python|celery|sql/i.test(activeTask);
 
     let targetRepo = activeRepo;
@@ -252,16 +252,8 @@ export default function Home() {
       ? `Requirements:\n1. Build an authentic, responsive login page with clean email & password inputs.\n2. Interactive password show/hide eye toggle with real-time field validation.\n3. Include 'Remember Me for 30 days' checkbox and 'Forgot Password' link.\n4. GitHub OAuth authentication bridge + clean Google enterprise styling.`
       : `Requirements:\n1. Synthesize and execute verified software solution strictly for: "${activeTask}".\n2. Real-time 60 FPS live interactive preview sandbox.\n3. Zero regression test assertions across the repository AST.`;
 
-    mission.issueTitle = activeTask;
-    mission.issueDescription = dynamicDesc;
-    mission.repository = targetRepo;
-    setMission(prev => ({
-      ...prev,
-      issueTitle: activeTask,
-      issueDescription: dynamicDesc,
-      repository: targetRepo,
-      status: 'REPOSITORY_ANALYZED',
-    }));
+    const activeMissionObj = orchestrator.createMission(targetRepo, activeTask, dynamicDesc);
+    setMission(activeMissionObj);
 
     const settings = AIProviderService.getSettings();
     try {
@@ -272,14 +264,8 @@ export default function Home() {
       if (r.ok) {
         const d = await r.json();
         if (d.plans) {
-          mission.solutions = { solution_a: d.plans.solution_a, solution_b: d.plans.solution_b };
-          setMission(prev => ({
-            ...prev,
-            issueTitle: activeTask,
-            issueDescription: dynamicDesc,
-            solutions: { solution_a: d.plans.solution_a, solution_b: d.plans.solution_b },
-            status: 'SOLUTIONS_GENERATED',
-          }));
+          activeMissionObj.solutions = { solution_a: d.plans.solution_a, solution_b: d.plans.solution_b };
+          orchestrator.setMission(activeMissionObj);
         }
       }
     } catch {}

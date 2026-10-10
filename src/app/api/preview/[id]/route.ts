@@ -115,12 +115,15 @@ CRITICAL LOGICAL REQUIREMENTS:
     // ─────────────────────────────────────────────────────────────────────────────
     // ATTEMPT 2: HIGH-FIDELITY PROCEDURAL GENERATION (ZERO DELAY FALLBACK)
     // ─────────────────────────────────────────────────────────────────────────────
-    const isRegistration = /register|registration|student|enroll|admission|sign\s?up/i.test(taskLower);
-    const isLogin = !isRegistration && /login|auth|password|email|sign\s?in/i.test(taskLower);
+    const isCalculator = /calc|calculator|math|arithmetic|keypad|display/i.test(taskLower);
+    const isRegistration = !isCalculator && /register|registration|student|enroll|admission|sign\s?up/i.test(taskLower);
+    const isLogin = !isCalculator && !isRegistration && /login|auth|password|email|sign\s?in/i.test(taskLower);
 
     let generatedHtml = '';
 
-    if (isRegistration) {
+    if (isCalculator) {
+      generatedHtml = buildCalculatorHtml(mode, currentTask || 'Digital Precision Calculator');
+    } else if (isRegistration) {
       generatedHtml = buildRegistrationHtml(mode, currentTask || 'Student Registration Portal');
     } else if (isLogin) {
       generatedHtml = buildLoginHtml(mode, currentTask || 'Secure Sign In Portal');
@@ -1519,3 +1522,481 @@ function buildGeneralAppHtml(mode: string, taskTitle: string): string {
 </html>`;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// INTERACTIVE CALCULATOR GENERATOR (ALL ARITHMETIC + LCD DISPLAY + KEYPAD + TAPE)
+// ─────────────────────────────────────────────────────────────────────────────
+function buildCalculatorHtml(mode: string, taskTitle: string): string {
+  const isMinimal = mode === 'minimum' || mode === 'a';
+  const isCustom = mode === 'custom';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${taskTitle} — CodeForge Runtime</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: ${isMinimal ? '#f1f5f9' : '#030408'};
+      color: ${isMinimal ? '#0f172a' : '#f8fafc'};
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* 3D Canvas Background */
+    canvas#bgCanvas {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: ${isMinimal ? '0.15' : '0.45'};
+    }
+
+    .calc-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    /* Header Bar */
+    .top-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: ${isMinimal ? '#e2e8f0' : 'rgba(0, 243, 255, 0.1)'};
+      color: ${isMinimal ? '#0284c7' : '#00f3ff'};
+      border: 1px solid ${isMinimal ? '#cbd5e1' : 'rgba(0, 243, 255, 0.3)'};
+    }
+
+    /* Calculator Chassis */
+    .calculator-chassis {
+      background: ${isMinimal ? '#ffffff' : 'rgba(10, 14, 28, 0.92)'};
+      backdrop-filter: blur(24px);
+      border: 1px solid ${isMinimal ? '#e2e8f0' : 'rgba(0, 243, 255, 0.25)'};
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: ${isMinimal ? '0 12px 36px rgba(0,0,0,0.08)' : '0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(0, 243, 255, 0.15)'};
+    }
+
+    /* LCD Screen Display */
+    .lcd-display {
+      background: ${isMinimal ? '#f8fafc' : '#020617'};
+      border: 1px solid ${isMinimal ? '#cbd5e1' : 'rgba(0, 243, 255, 0.35)'};
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      text-align: right;
+      box-shadow: ${isMinimal ? 'inset 0 2px 4px rgba(0,0,0,0.04)' : 'inset 0 0 25px rgba(0, 243, 255, 0.1), 0 0 15px rgba(0, 243, 255, 0.1)'};
+    }
+
+    .lcd-history {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      color: ${isMinimal ? '#64748b' : '#38bdf8'};
+      min-height: 20px;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .lcd-value {
+      font-family: ${isMinimal ? "'Inter', sans-serif" : "'Orbitron', monospace"};
+      font-size: 38px;
+      font-weight: 800;
+      color: ${isMinimal ? '#0f172a' : '#00f3ff'};
+      letter-spacing: 0.04em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-shadow: ${isMinimal ? 'none' : '0 0 16px rgba(0, 243, 255, 0.5)'};
+    }
+
+    /* Keypad Grid */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .btn-key {
+      padding: 16px 8px;
+      border-radius: 14px;
+      font-family: ${isMinimal ? "'Inter', sans-serif" : "'Space Mono', monospace"};
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s ease;
+      background: ${isMinimal ? '#f1f5f9' : 'rgba(255, 255, 255, 0.05)'};
+      color: ${isMinimal ? '#0f172a' : '#f8fafc'};
+      border: 1px solid ${isMinimal ? '#e2e8f0' : 'rgba(255, 255, 255, 0.08)'};
+    }
+
+    .btn-key:hover {
+      transform: translateY(-2px);
+      background: ${isMinimal ? '#e2e8f0' : 'rgba(255, 255, 255, 0.12)'};
+    }
+
+    .btn-key:active {
+      transform: translateY(1px);
+    }
+
+    .btn-num {
+      font-weight: 600;
+    }
+
+    .btn-op {
+      background: ${isMinimal ? '#e0f2fe' : 'rgba(0, 243, 255, 0.15)'};
+      color: ${isMinimal ? '#0284c7' : '#00f3ff'};
+      border-color: ${isMinimal ? '#bae6fd' : 'rgba(0, 243, 255, 0.35)'};
+      font-size: 18px;
+    }
+
+    .btn-op:hover {
+      background: ${isMinimal ? '#bae6fd' : 'rgba(0, 243, 255, 0.28)'};
+    }
+
+    .btn-action {
+      background: ${isMinimal ? '#fef3c7' : 'rgba(251, 146, 60, 0.15)'};
+      color: ${isMinimal ? '#d97706' : '#fb923c'};
+      border-color: ${isMinimal ? '#fde68a' : 'rgba(251, 146, 60, 0.3)'};
+    }
+
+    .btn-equals {
+      background: ${isMinimal ? '#16a34a' : 'linear-gradient(135deg, #00f3ff, #cf3fff)'};
+      color: ${isMinimal ? '#ffffff' : '#030408'};
+      font-size: 20px;
+      font-weight: 900;
+      box-shadow: ${isMinimal ? '0 4px 12px rgba(22, 163, 74, 0.3)' : '0 0 20px rgba(0, 243, 255, 0.4)'};
+    }
+
+    .btn-equals:hover {
+      box-shadow: ${isMinimal ? '0 6px 16px rgba(22, 163, 74, 0.4)' : '0 0 28px rgba(0, 243, 255, 0.65)'};
+    }
+
+    /* Memory / Function Row */
+    .mem-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .btn-mem {
+      padding: 8px 4px;
+      border-radius: 10px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      background: transparent;
+      color: ${isMinimal ? '#64748b' : '#94a3b8'};
+      border: 1px solid ${isMinimal ? '#cbd5e1' : 'rgba(255, 255, 255, 0.1)'};
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-mem:hover {
+      color: ${isMinimal ? '#0f172a' : '#00f3ff'};
+      border-color: ${isMinimal ? '#94a3b8' : '#00f3ff'};
+    }
+
+    /* Calculation Tape / History Drawer */
+    .tape-card {
+      margin-top: 18px;
+      padding: 14px 18px;
+      border-radius: 16px;
+      background: ${isMinimal ? '#ffffff' : 'rgba(10, 14, 28, 0.85)'};
+      border: 1px solid ${isMinimal ? '#e2e8f0' : 'rgba(255, 255, 255, 0.08)'};
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+    }
+
+    .tape-title {
+      font-weight: 700;
+      color: ${isMinimal ? '#64748b' : '#38bdf8'};
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tape-list {
+      max-height: 80px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .tape-item {
+      display: flex;
+      justify-content: space-between;
+      color: ${isMinimal ? '#334155' : '#cbd5e1'};
+      padding: 3px 0;
+      border-bottom: 1px dashed ${isMinimal ? '#f1f5f9' : 'rgba(255, 255, 255, 0.05)'};
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+
+  <div class="calc-container">
+    <div class="top-badge">
+      <span>●</span>
+      <span>${isMinimal ? '1. MINIMAL DESKTOP CALCULATOR' : '2. RECOMMENDED 3D CYBER CALCULATOR'}</span>
+    </div>
+
+    <div class="calculator-chassis">
+      <!-- LCD Screen -->
+      <div class="lcd-display">
+        <div class="lcd-history" id="exprDisplay">&nbsp;</div>
+        <div class="lcd-value" id="mainDisplay">0</div>
+      </div>
+
+      <!-- Memory Controls -->
+      <div class="mem-row">
+        <button class="btn-mem" onclick="calcMem('mc')">MC</button>
+        <button class="btn-mem" onclick="calcMem('mr')">MR</button>
+        <button class="btn-mem" onclick="calcMem('mplus')">M+</button>
+        <button class="btn-mem" onclick="calcMem('mminus')">M-</button>
+      </div>
+
+      <!-- Scientific Keys (Recommended) -->
+      ${!isMinimal ? `
+      <div class="mem-row" style="margin-bottom: 10px;">
+        <button class="btn-mem" onclick="calcSci('sq')">x²</button>
+        <button class="btn-mem" onclick="calcSci('sqrt')">√x</button>
+        <button class="btn-mem" onclick="calcSci('inv')">1/x</button>
+        <button class="btn-mem" onclick="calcSci('pi')">π</button>
+      </div>
+      ` : ''}
+
+      <!-- Main Keypad -->
+      <div class="keypad">
+        <button class="btn-key btn-action" onclick="calcAction('ac')">AC</button>
+        <button class="btn-key btn-action" onclick="calcAction('c')">C</button>
+        <button class="btn-key btn-action" onclick="calcAction('del')">⌫</button>
+        <button class="btn-key btn-op" onclick="calcOp('/')">÷</button>
+
+        <button class="btn-key btn-num" onclick="calcNum('7')">7</button>
+        <button class="btn-key btn-num" onclick="calcNum('8')">8</button>
+        <button class="btn-key btn-num" onclick="calcNum('9')">9</button>
+        <button class="btn-key btn-op" onclick="calcOp('*')">×</button>
+
+        <button class="btn-key btn-num" onclick="calcNum('4')">4</button>
+        <button class="btn-key btn-num" onclick="calcNum('5')">5</button>
+        <button class="btn-key btn-num" onclick="calcNum('6')">6</button>
+        <button class="btn-key btn-op" onclick="calcOp('-')">−</button>
+
+        <button class="btn-key btn-num" onclick="calcNum('1')">1</button>
+        <button class="btn-key btn-num" onclick="calcNum('2')">2</button>
+        <button class="btn-key btn-num" onclick="calcNum('3')">3</button>
+        <button class="btn-key btn-op" onclick="calcOp('+')">+</button>
+
+        <button class="btn-key" onclick="calcAction('pm')">±</button>
+        <button class="btn-key btn-num" onclick="calcNum('0')">0</button>
+        <button class="btn-key" onclick="calcNum('.')">.</button>
+        <button class="btn-key btn-equals" onclick="calcEquals()">=</button>
+      </div>
+    </div>
+
+    <!-- Live Calculation History Tape -->
+    <div class="tape-card">
+      <div class="tape-title">
+        <span>CALCULATION TAPE</span>
+        <span style="font-size: 9px; cursor: pointer; color: #94a3b8;" onclick="clearTape()">CLEAR</span>
+      </div>
+      <div class="tape-list" id="tapeList">
+        <div class="tape-item"><span>Ready for calculation</span><span>0.00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentVal = '0';
+    let prevVal = null;
+    let operation = null;
+    let resetOnNextNum = false;
+    let memoryVal = 0;
+    const historyTape = [];
+
+    const mainDisp = document.getElementById('mainDisplay');
+    const exprDisp = document.getElementById('exprDisplay');
+    const tapeList = document.getElementById('tapeList');
+
+    function updateDisplay() {
+      mainDisp.innerText = currentVal;
+      if (operation && prevVal !== null) {
+        const opSymbol = operation === '*' ? '×' : operation === '/' ? '÷' : operation === '-' ? '−' : '+';
+        exprDisp.innerText = prevVal + ' ' + opSymbol;
+      } else {
+        exprDisp.innerHTML = '&nbsp;';
+      }
+    }
+
+    function calcNum(n) {
+      if (resetOnNextNum) {
+        currentVal = n === '.' ? '0.' : n;
+        resetOnNextNum = false;
+      } else {
+        if (n === '.') {
+          if (!currentVal.includes('.')) currentVal += '.';
+        } else {
+          currentVal = currentVal === '0' ? n : currentVal + n;
+        }
+      }
+      updateDisplay();
+    }
+
+    function calcOp(op) {
+      if (operation && !resetOnNextNum) {
+        calcEquals();
+      }
+      prevVal = currentVal;
+      operation = op;
+      resetOnNextNum = true;
+      updateDisplay();
+    }
+
+    function calcEquals() {
+      if (!operation || prevVal === null) return;
+      const a = parseFloat(prevVal);
+      const b = parseFloat(currentVal);
+      let res = 0;
+
+      if (operation === '+') res = a + b;
+      else if (operation === '-') res = a - b;
+      else if (operation === '*') res = a * b;
+      else if (operation === '/') res = b === 0 ? 'Error: Div/0' : a / b;
+
+      const opSymbol = operation === '*' ? '×' : operation === '/' ? '÷' : operation === '-' ? '−' : '+';
+      addTape(prevVal + ' ' + opSymbol + ' ' + currentVal, res);
+
+      currentVal = typeof res === 'number' ? parseFloat(res.toFixed(8)).toString() : res;
+      prevVal = null;
+      operation = null;
+      resetOnNextNum = true;
+      updateDisplay();
+    }
+
+    function calcAction(act) {
+      if (act === 'ac') {
+        currentVal = '0';
+        prevVal = null;
+        operation = null;
+        resetOnNextNum = false;
+      } else if (act === 'c') {
+        currentVal = '0';
+      } else if (act === 'del') {
+        currentVal = currentVal.length > 1 ? currentVal.slice(0, -1) : '0';
+      } else if (act === 'pm') {
+        currentVal = (parseFloat(currentVal) * -1).toString();
+      }
+      updateDisplay();
+    }
+
+    function calcMem(act) {
+      const v = parseFloat(currentVal);
+      if (act === 'mc') memoryVal = 0;
+      else if (act === 'mr') { currentVal = memoryVal.toString(); resetOnNextNum = true; }
+      else if (act === 'mplus') memoryVal += v;
+      else if (act === 'mminus') memoryVal -= v;
+      updateDisplay();
+    }
+
+    function calcSci(act) {
+      const v = parseFloat(currentVal);
+      if (act === 'sq') currentVal = (v * v).toString();
+      else if (act === 'sqrt') currentVal = Math.sqrt(v).toString();
+      else if (act === 'inv') currentVal = (1 / v).toString();
+      else if (act === 'pi') currentVal = Math.PI.toFixed(8).toString();
+      resetOnNextNum = true;
+      updateDisplay();
+    }
+
+    function addTape(expr, res) {
+      const row = document.createElement('div');
+      row.className = 'tape-item';
+      row.innerHTML = '<span>' + expr + ' =</span><strong>' + res + '</strong>';
+      tapeList.prepend(row);
+    }
+
+    function clearTape() {
+      tapeList.innerHTML = '<div class="tape-item"><span>Tape Cleared</span><span>0.00</span></div>';
+    }
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      if (e.key >= '0' && e.key <= '9') calcNum(e.key);
+      else if (e.key === '.') calcNum('.');
+      else if (e.key === '+' || e.key === '-') calcOp(e.key);
+      else if (e.key === '*') calcOp('*');
+      else if (e.key === '/') { e.preventDefault(); calcOp('/'); }
+      else if (e.key === 'Enter' || e.key === '=') calcEquals();
+      else if (e.key === 'Backspace') calcAction('del');
+      else if (e.key === 'Escape') calcAction('ac');
+    });
+
+    // 3D Particles
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let w, h, particles = [];
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    for (let i = 0; i < 40; i++) {
+      particles.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        r: Math.random() * 2 + 1,
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '${isMinimal ? 'rgba(2, 132, 199, 0.4)' : 'rgba(0, 243, 255, 0.5)'}';
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      requestAnimationFrame(animate);
+    }
+    animate();
+  </script>
+</body>
+</html>`;
+}
